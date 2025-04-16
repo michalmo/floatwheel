@@ -186,7 +186,6 @@ void Power_Task(void)
 			PDSG_OFF;
 			PCHG_OFF;
 			CHARG_OFF;
-			CAN_Reset();
 			Flag.Key_Boot = 0;
 		
 			if((newBals != 0) && (Flag.Short_Circuit == 0))
@@ -195,6 +194,8 @@ void Power_Task(void)
 				Flag.Power = 4;
 				return;
 			}
+
+			CAN_Reset();
 			
 			if(Flag.Software_Reset == 0)
 			{
@@ -216,6 +217,7 @@ void Power_Task(void)
 			if((newBals == 0) || (Flag.Short_Circuit == 1))		//Æ½ºâ³ä½áÊø
 			{
 				LED_OFF;
+				CAN_Reset();
 				
 				if(Flag.Software_Reset == 0)
 				{
