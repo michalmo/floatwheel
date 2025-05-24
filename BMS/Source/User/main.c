@@ -4,7 +4,7 @@
   * @author     :  FCZ
   * @version    ： V1.0.0
   * @date       ： 2024年08月03日
-  * @brief      ： BMS VESC 
+  * @brief      ： BMS VESC
   * @mcu        :  N32L403K8Q7
   ******************************************************************************/
 /*----------------------------------------------------------------------------
@@ -60,7 +60,7 @@ int main(void)
 	CAN_Config();
 	DVC1124_Init();
 	Time6_Init();
-	PPM_Init();
+	//PPM_Init();
 	PWR_Init();
 	User_Delay_xms(50);
 	
@@ -79,7 +79,6 @@ int main(void)
 		PDSG_OFF;
 		PCHG_OFF;
 		CHARG_OFF;
-		Set_PPM(1500);//1.5ms
 		Flag.Software_Reset = 0;
 		Flag.Power = 2;
 	}
