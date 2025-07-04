@@ -69,6 +69,10 @@ void DVC1124_Voltage(void)
 	}
 	first = 1;
 
+	VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->V_Cell_Min = DVC_1124.Single_Voltage_Min;
+	VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->V_Cell_Max = DVC_1124.Single_Voltage_Max;
+
+	VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soc = GetPowerLevel(VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f) * 255;
 	//芯片温度
 	DVC_1124.IC_Temp = DVC11XX_Calc_ChipTemp();
 	VESC_CAN_DATA.pBMS_HUM->Temp_IC = (int16_t)(DVC_1124.IC_Temp*100);
@@ -81,6 +85,15 @@ void DVC1124_Voltage(void)
 	//GP4温度
 	DVC_1124.GP4_Temp = DVC11XX_Calc_BatTemp(GP4);
 	VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[2] = (int16_t)(DVC_1124.GP4_Temp*100);
+
+	if(DVC_1124.GP1_Temp > DVC_1124.GP4_Temp)
+	{
+		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max = (uint8_t)(roundf(DVC_1124.GP1_Temp));
+	}
+	else
+	{
+		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max = (uint8_t)(roundf(DVC_1124.GP4_Temp));
+	}
 }
 
 /**************************************************
@@ -145,4 +158,36 @@ void DVC1124_Task(void)
 	}
 }
 
+float GetPowerLevel(float battery_voltage)
+{
+	#ifdef S50S
+	uint16_t battVoltages_mv[11] = {4200, 4075, 4040, 3900, 3820, 3735, 3640, 3520, 3375, 3160, 3000}; //50S
+	#endif
 
+	#ifdef P42A
+	uint16_t battVoltages_mv[11] = {4200, 4065, 3938, 3854, 3776, 3695, 3618, 3543, 3460, 3342, 3000}; //P42A
+	#endif
+
+	#ifdef DG40
+	uint16_t battVoltages_mv[11] = {4200, 4047, 3944, 3867, 3799, 3717, 3600, 3498, 3381, 3237, 3000}; //DG40
+	#endif
+
+	#ifdef VTC6
+	uint16_t battVoltages_mv[11] = {4200, 4064, 4015, 3895, 3821, 3745, 3655, 3559, 3459, 3292, 3000}; // Sony VTC6
+	#endif
+
+  uint16_t battery_voltage_mv = battery_voltage * 1000 / MAX_CELL_SERIES;
+
+	if (battery_voltage_mv >= battVoltages_mv[0]) {
+		return 1.0;
+	} else if (battery_voltage_mv <= battVoltages_mv[10]) {
+		return 0.0;
+	} else {
+		for (int i = 1; i <= 10; i++) {
+			if (battery_voltage_mv >= battVoltages_mv[i]) {
+				return ((1.0 - i*0.1) + (0.1 * (battery_voltage_mv - battVoltages_mv[i])) / (battVoltages_mv[i - 1] - battVoltages_mv[i]));
+			}
+		}
+	}
+	return 0.0;
+}

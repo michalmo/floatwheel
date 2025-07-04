@@ -98,6 +98,7 @@ void BalanceProcess(void)
 	{
 		Balance_Contrl(newBals);
 		VESC_CAN_DATA.pBMS_BAL->BMS_BAT.i = newBals;
+		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Balancing = newBals ? 1 : 0;
 	}
 	
 //	for(i=0;i<AFE_MAX_CELL_CNT;i++)

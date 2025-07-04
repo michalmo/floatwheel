@@ -339,7 +339,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>N32L40X USE_STDPERIPH_DRIVER ADV2</Define>
+              <Define>N32L40X USE_STDPERIPH_DRIVER ADV2 S50S</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\core;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\device;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\n32l40x_std_periph_driver\inc;..\..\Source\App;..\..\Source\Drive;..\..\Source\DVC1124;..\..\Source\User;..\..\Source\VESC</IncludePath>
             </VariousControls>

@@ -9,6 +9,7 @@ solution:
         - OutputName: adv2
       define:
         - ADV2
+        - S50S
       device: N32L403K8
   build-types:
     - type: Debug

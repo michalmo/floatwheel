@@ -33,6 +33,7 @@ CAN_BMS_HUM		BMS_HUM =
 	.Humidity = 0,					//湿度	0-10000(0%-100%);
 	.Temp_Hum_Sensor = 0,			//温度	-10000-10000(-100°-100°)
 	.Temp_IC = 0,					//IC温度
+	.Pressure = 0,
 };
 
 CAN_BMS_SOC_SOH_TEMP_STAT	BMS_SOC_SOH_TEMP_STAT = 
@@ -42,7 +43,10 @@ CAN_BMS_SOC_SOH_TEMP_STAT	BMS_SOC_SOH_TEMP_STAT =
 	.Soc = 0,						//0-255(0%-100%)
 	.Soh = 0,						//0-255(0%-100%)
 	.T_Cell_Max = 0,				//单节电池最大温度
-	.Stat = 0,						//
+	.Stat.bits = {
+		.Is_Charge_Allowed = 1,
+		.Is_Charge_OK = 1,
+	},
 };
 
 CAN_BMS_AH_WH_CHG_TOTAL		BMS_AH_WH_CHG_TOTAL =
@@ -270,7 +274,7 @@ void VESC_Set_BMS_HUM(VESC_CAN_TYPE *vesc_can_data)
 	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_HUM->Temp_Hum_Sensor, &ind);
 	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_HUM->Humidity, &ind);
 	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_HUM->Temp_IC, &ind);
-	buffer_append_int16(can_tx_buffer, 0, &ind);
+	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_HUM->Pressure, &ind);
 
 	VESC_COMM_CAN_Transmit(0xFF,CAN_PACKET_BMS_HUM,can_tx_buffer,ind);
 }

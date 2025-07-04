@@ -47,6 +47,7 @@ void BMS_Overvoltage_Protection(void)
 	{
 		lock = 1;
 		CHARG_OFF;					//关闭充电器
+		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 		VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[3] = 9900;	//错误代码
 		Flag.Overvoltage = 1;
 		
@@ -55,13 +56,16 @@ void BMS_Overvoltage_Protection(void)
 		{
 			lock = 0;
 			Flag.Overvoltage = 0;
-			if((CHARGER == 1) && (Flag.Charging_Overcurrent == 0)) //过压保护解除并且没有发生充电过流
+			if(
+				CHARGER == 1 && 
+				Flag.Charge_Allowed &&
+				Flag.Charging_Overcurrent == 0 &&
+				Flag.Overtemperature == 0 &&
+				Flag.Lowtemperature == 0
+			) //过压保护解除并且没有发生充电过流
 			{
-				if((Flag.Overtemperature == 0) && (Flag.Lowtemperature == 0))	//没有发生过温和低温
-				{
-					Flag.Charger_ON = 0;
-				}
-				
+				Flag.Charger_ON = 0;
+				VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 1;
 			}
 			VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[3] = 0;	//错误代码
 			
@@ -102,6 +106,7 @@ void BMS_Undervoltage_Protection(void)
 			Software_Counter_1ms.Undervoltage_No_Charge_Delay = 60000;
 			Flag.Charger_ON = 1;	//单芯电压低于2.3V，不执行充电逻辑即禁止充电
 			CHARG_OFF;				//关闭充电器
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 		}
 	}	
 	else
@@ -239,6 +244,7 @@ void BMS_Charge_Overcurrent_Protection(void)
 	{
 		Flag.Charging_Overcurrent = 1;
 		CHARG_OFF;					//关闭充电器
+		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 		VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[6] = 9900;	//错误代码
 		lock = 1;
 		Software_Counter_1ms.Charge_Overcurrent_Delay = 0;
@@ -252,12 +258,16 @@ void BMS_Charge_Overcurrent_Protection(void)
 				lock = 0;
 				VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[6] = 0;	//错误代码
 				
-				if((CHARGER == 1) && (Flag.Overvoltage == 0))	//充电器插入并且没有发生过压
+				if(
+					CHARGER == 1 && 
+					Flag.Charge_Allowed &&
+					Flag.Overvoltage == 0 &&
+					Flag.Overtemperature == 0 &&
+					Flag.Lowtemperature == 0
+				)	//充电器插入并且没有发生过压
 				{
-					if((Flag.Overtemperature == 0) && (Flag.Lowtemperature == 0))	//没有发生过温和低温
-					{
-						Flag.Charger_ON = 0;
-					}
+					Flag.Charger_ON = 0;
+					VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 1;
 				}
 				
 				r0 = g_AfeRegs.R0.cleanflag;
@@ -316,6 +326,7 @@ void BMS_Overtemperature_Protection(void)
 			{
 				Flag.Overtemperature = 1;
 				CHARG_OFF;					//关闭充电器
+				VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 				VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[7] = 9900;	//错误代码
 				lock = 1;
 			}
@@ -338,12 +349,16 @@ void BMS_Overtemperature_Protection(void)
 			lock = 0;
 			VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[7] = 0;	//错误代码 T9
 			
-			if((CHARGER == 1) && (Flag.Overvoltage == 0) && (Flag.Charging_Overcurrent == 0))	//充电器插入并且没有发生过压 没有发生充电过流
+			if(
+				CHARGER == 1 && 
+				Flag.Charge_Allowed &&
+				Flag.Overvoltage == 0 &&
+				Flag.Charging_Overcurrent == 0 &&
+				Flag.Lowtemperature == 0
+			)	//充电器插入并且没有发生过压 没有发生充电过流
 			{
-				if(Flag.Lowtemperature == 0)	//没有发生低温
-				{
-					Flag.Charger_ON = 0;
-				}
+				Flag.Charger_ON = 0;
+				VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 1;
 			}
 		}
 	}
@@ -369,6 +384,7 @@ void BMS_Low_Temperature_Protection(void)
 			{
 				Flag.Lowtemperature = 1;
 				CHARG_OFF;					//关闭充电器
+				VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 				VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[8] = 9900;	//错误代码
 				lock = 1;
 			}
@@ -394,12 +410,16 @@ void BMS_Low_Temperature_Protection(void)
 				(DVC_1124.GP4_Temp > BATTERY_TEMPERATURE_LOW_THRESHOLD_CHARGE)
 				)
 			{
-				if((CHARGER == 1) && (Flag.Overvoltage == 0) && (Flag.Charging_Overcurrent == 0))	//充电器插入并且没有发生过压 没有发生充电过流
+				if(
+					CHARGER == 1 && 
+					Flag.Charge_Allowed &&
+					Flag.Overvoltage == 0 &&
+					Flag.Charging_Overcurrent == 0 &&
+					Flag.Overtemperature == 0
+				)	//充电器插入并且没有发生过压 没有发生充电过流 没有发生充电过温 没有发生高温
 				{
-					if((Flag.Overtemperature == 0))	//没有发生高温
-					{
-						Flag.Charger_ON = 0;
-					}
+					Flag.Charger_ON = 0;
+					VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 1;
 				}
 				VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[8] = 0;	//错误代码
 				Flag.Lowtemperature = 0;

@@ -30,6 +30,7 @@ typedef struct
 extern DVC1124_Type	DVC_1124;
 
 void DVC1124_Task(void);
+float GetPowerLevel(float battery_voltage);
 	
 #endif
 

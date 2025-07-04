@@ -291,12 +291,18 @@ void Charger_Task(void)
 		}
 		Flag.Charger_Boot = 1;
 		VESC_CAN_DATA.pBMS_V_TOT->Charge_Input_Voltage.f = 84; 
+		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charging = (
+			1 &
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_Allowed &
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK
+		);
 	}
 	else
 	{
 		
 		Flag.Charger_Boot = 0;
 		VESC_CAN_DATA.pBMS_V_TOT->Charge_Input_Voltage.f = 0; 
+		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charging = 0;
 	}
 	
 	if(Flag.Charger_Boot == 0)	

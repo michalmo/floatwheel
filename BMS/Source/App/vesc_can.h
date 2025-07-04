@@ -25,6 +25,21 @@ typedef union
 
 typedef union
 {
+	uint8_t i;
+	struct {
+		uint8_t Is_Charging:1;
+		uint8_t Is_Balancing:1;
+		uint8_t Is_Charge_Allowed:1;  // enabled/disabled by user
+		uint8_t Is_Charge_OK:1;  // permitted by conditions
+		uint8_t b5:1;
+		uint8_t b6:1;
+		uint8_t b7:1;
+		uint8_t b8:1;
+	} bits;
+} BMS_STAT;
+
+typedef union
+{
 	uint32_t i;
 	uint32_t b32:1;
 	uint32_t b31:1;
@@ -109,6 +124,7 @@ typedef struct
 	uint16_t 		Humidity;				//湿度	0-10000(0%-100%);
 	int16_t			Temp_Hum_Sensor;		//温度	-10000-10000(-100°-100°)
 	int16_t			Temp_IC;				//IC温度
+	uint16_t 		Pressure;
 }CAN_BMS_HUM;
 
 typedef struct
@@ -118,7 +134,7 @@ typedef struct
 	uint8_t 		Soc;					//0-255(0%-100%) 充电状态
 	uint8_t			Soh;					//0-255(0%-100%) 健康状态
 	uint8_t			T_Cell_Max;				//单节电池最大温度
-	uint8_t			Stat;					//
+	BMS_STAT		Stat;
 }CAN_BMS_SOC_SOH_TEMP_STAT;
 
 typedef struct
