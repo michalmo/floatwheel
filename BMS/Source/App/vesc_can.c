@@ -1,5 +1,8 @@
 #include "vesc_can.h"
 #include "datatypes.h"
+#include "buffer.h"
+#include "confparser.h"
+#include "confxml.h"
 #include "n32l40x_can.h"
 
 CAN_BMS_V_TOT 	BMS_V_TOT = 
@@ -686,6 +689,9 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 	int32_t ind = 0;
 	uint8_t buffer[RX_BUFFER_SIZE];
 	int i;
+	main_config_t conf;
+	main_config_t *conf_ptr = &conf;
+	int conf_ind;
 	int16_t value16;
 	int32_t value32;
 
@@ -712,7 +718,7 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			buffer[ind++] = 0; // Is paired?
 			buffer[ind++] = VESC_FW_TEST_VERSION_NUMBER;
 			buffer[ind++] = HW_TYPE_VESC_BMS;
-			buffer[ind++] = 0; // Custom configs
+			buffer[ind++] = 1; // Custom configs
 			if (reply_to != 0)
 			{
 				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
@@ -754,6 +760,85 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			buffer_append_float32_auto(buffer, VESC_CAN_DATA.pBMS_AH_WH_DIS_TOTAL->Wh_Discharge_Total.f, &ind);
 			buffer_append_int16(buffer, VESC_CAN_DATA.pBMS_HUM->Pressure, &ind);
 			if (reply_to != 0)
+			{
+				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+			}
+		break;
+
+		case COMM_GET_CUSTOM_CONFIG:
+		case COMM_GET_CUSTOM_CONFIG_DEFAULT:
+			conf_ptr = &conf;
+			conf_ind = pdata[0];
+
+			if(conf_ind != 0) {
+				break;
+			}
+
+			if(packet_id == COMM_GET_CUSTOM_CONFIG)
+			{
+				*conf_ptr = config;
+			}
+			else
+			{
+				confparser_set_defaults_main_config_t(conf_ptr);
+			}
+
+			buffer[ind++] = packet_id;
+			buffer[ind++] = conf_ind;
+			ind += confparser_serialize_main_config_t(buffer + ind, conf_ptr);
+			if(reply_to != 0)
+			{
+				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+			}
+		break;
+
+		case COMM_SET_CUSTOM_CONFIG:
+  		conf_ptr = &conf;
+  		conf_ind = pdata[0];
+
+			if(conf_ind == 0 &&
+				 confparser_deserialize_main_config_t(pdata + 1, conf_ptr))
+			{
+				config = *conf_ptr;
+				// flash_helper_store_backup_data();
+
+				buffer[ind++] = packet_id;
+				if (reply_to != 0)
+				{
+					VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+				}
+			}
+			else if(reply_to != 0)
+			{
+	  	  VESC_Printf(reply_to, "Warning: Could not set configuration");
+			}
+		break;
+
+		case COMM_GET_CUSTOM_CONFIG_XML:
+			conf_ind = pdata[ind++];
+
+			if(conf_ind != 0)
+			{
+				break;
+			}
+
+			int32_t len_conf = buffer_get_int32(pdata, &ind);
+			int32_t ofs_conf = buffer_get_int32(pdata, &ind);
+
+			if((len_conf + ofs_conf) > DATA_MAIN_CONFIG_T__SIZE ||
+				 len_conf > (RX_BUFFER_SIZE - 18))
+			{
+				break;
+			}
+
+			ind = 0;
+			buffer[ind++] = packet_id;
+			buffer[ind++] = conf_ind;
+			buffer_append_int32(buffer, DATA_MAIN_CONFIG_T__SIZE, &ind);
+			buffer_append_int32(buffer, ofs_conf, &ind);
+			memcpy(buffer + ind, data_main_config_t_ + ofs_conf, len_conf);
+			ind += len_conf;
+			if(reply_to != 0)
 			{
 				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
 			}

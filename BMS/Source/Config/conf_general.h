@@ -15,4 +15,8 @@
 #define HW_DEFAULT_ID CONF_CONTROLLER_ID
 #endif
 
+extern main_config_t config;
+
+void Config_Init();
+
 #endif

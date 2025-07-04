@@ -12,6 +12,7 @@
   2024-08-03 V1.0.0:初始版本
   ----------------------------------------------------------------------------*/
 #include "n32l40x.h"
+#include "conf_general.h"
 #include "can.h"
 #include "User_Delay_Config.h"
 #include "vesc_can.h"
@@ -46,6 +47,7 @@ RCC_ClocksType System_Clock;
 int main(void)
 {
 	RCC_GetClocksFreqValue(&System_Clock);
+	Config_Init();
 	GP2_Init();
 	User_Delay_init();
 	User_Delay_xms(10);
