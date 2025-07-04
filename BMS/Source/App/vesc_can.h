@@ -4,8 +4,18 @@
 #include "n32l40x.h"
 #include "datatypes.h"
 
+#define CAN_TX_QUEUE_SIZE 200
+
 #define MAX_CELL_SERIES 20
 #define MAX_TEMP_SENSORS 9
+
+typedef struct
+{
+    uint8_t can_id;
+    uint8_t can_packet_id;
+    uint8_t data[8];
+    uint8_t len;
+} can_queued_message;
 
 typedef union
 {
@@ -139,16 +149,18 @@ typedef struct
 
 extern VESC_CAN_TYPE VESC_CAN_DATA;
 
-void VESC_Set_BMS_V_TOT(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_I(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_AH_WH(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_V_CELL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data,uint8_t start_cell_id);
-void VESC_Set_BMS_BAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_TEMPS(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data,uint8_t start_sensor_id);
-void VESC_Set_BMS_HUM(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_SOC_SOH_TEMP_STAT(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_AH_WH_CHG_TOTAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_AH_WH_DIS_TOTAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
+void VESC_CAN_Transmit_Task(void);
+
+void VESC_Set_BMS_V_TOT(VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_I(VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_AH_WH(VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_V_CELL(VESC_CAN_TYPE *vesc_can_data,uint8_t start_cell_id);
+void VESC_Set_BMS_BAL(VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_TEMPS(VESC_CAN_TYPE *vesc_can_data,uint8_t start_sensor_id);
+void VESC_Set_BMS_HUM(VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_SOC_SOH_TEMP_STAT(VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_AH_WH_CHG_TOTAL(VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_AH_WH_DIS_TOTAL(VESC_CAN_TYPE *vesc_can_data);
 
 typedef struct
 {

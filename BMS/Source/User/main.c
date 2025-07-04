@@ -105,6 +105,7 @@ int main(void)
 		Power_Task();
 		DVC1124_Task();
 		VESC_CAN_Status_Task();
+		VESC_CAN_Transmit_Task();
 		Charger_Task();
 		BMS_Protection_Task();
 		Automatic_Shutdown();
