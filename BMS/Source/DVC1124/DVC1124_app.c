@@ -72,7 +72,7 @@ void DVC1124_Voltage(void)
 	VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->V_Cell_Min = DVC_1124.Single_Voltage_Min;
 	VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->V_Cell_Max = DVC_1124.Single_Voltage_Max;
 
-	VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soc = GetPowerLevel(VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f) * 255;
+	VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soc = GetPowerLevel(VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f);
 	//芯片温度
 	DVC_1124.IC_Temp = DVC11XX_Calc_ChipTemp();
 	VESC_CAN_DATA.pBMS_HUM->Temp_IC = (int16_t)(DVC_1124.IC_Temp*100);
@@ -86,14 +86,7 @@ void DVC1124_Voltage(void)
 	DVC_1124.GP4_Temp = DVC11XX_Calc_BatTemp(GP4);
 	VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[2] = (int16_t)(DVC_1124.GP4_Temp*100);
 
-	if(DVC_1124.GP1_Temp > DVC_1124.GP4_Temp)
-	{
-		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max = (uint8_t)(roundf(DVC_1124.GP1_Temp));
-	}
-	else
-	{
-		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max = (uint8_t)(roundf(DVC_1124.GP4_Temp));
-	}
+	VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max = DVC_1124.GP1_Temp > DVC_1124.GP4_Temp ? DVC_1124.GP1_Temp : DVC_1124.GP4_Temp;
 }
 
 /**************************************************

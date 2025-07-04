@@ -1,6 +1,8 @@
 #ifndef __VESC_CAN
 #define __VESC_CAN
 
+#include <math.h>
+
 #include "n32l40x.h"
 #include "datatypes.h"
 #include "CellBalance.h"
@@ -143,9 +145,9 @@ typedef struct
 {
 	uint16_t		V_Cell_Min;				//单节电池最低电压 扩大1000倍发送
 	uint16_t		V_Cell_Max;				//单节电池最高电压 扩大1000倍发送
-	uint8_t 		Soc;					//0-255(0%-100%) 充电状态
-	uint8_t			Soh;					//0-255(0%-100%) 健康状态
-	uint8_t			T_Cell_Max;				//单节电池最大温度
+	float 			Soc;					//0-255(0%-100%) 充电状态
+	float				Soh;					//0-255(0%-100%) 健康状态
+	float				T_Cell_Max;				//单节电池最大温度
 	BMS_STAT		Stat;
 }CAN_BMS_SOC_SOH_TEMP_STAT;
 

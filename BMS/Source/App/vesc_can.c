@@ -660,7 +660,10 @@ void VESC_CAN_Receive_Task(void)
 void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 {
 	int32_t ind = 0;
-	uint8_t buffer[50];
+	uint8_t buffer[RX_BUFFER_SIZE];
+	int i;
+	int16_t value16;
+	int32_t value32;
 
 	if(!len)
 	{
@@ -686,6 +689,46 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			buffer[ind++] = VESC_FW_TEST_VERSION_NUMBER;
 			buffer[ind++] = HW_TYPE_VESC_BMS;
 			buffer[ind++] = 0; // Custom configs
+			if (reply_to != 0)
+			{
+				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+			}
+		break;
+
+		case COMM_BMS_GET_VALUES:
+			buffer[ind++] = COMM_BMS_GET_VALUES;
+			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f, 1000000, &ind);
+			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_V_TOT->Charge_Input_Voltage.f, 1000000, &ind);
+			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_I->Input_Current.f, 1000000, &ind);
+			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_I->Input_Current_BMS_IC.f, 1000000, &ind);
+			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_AH_WH->Ah_Counter.f, 1000, &ind);
+			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_AH_WH->Wh_Counter.f, 1000, &ind);
+			buffer[ind++] = MAX_CELL_SERIES;
+			for(i=0;i<MAX_CELL_SERIES;i++)
+			{
+				buffer_append_int16(buffer, VESC_CAN_DATA.pBMS_V_CELL->BMS_Single_Voltage[i], &ind);
+			}
+			for(i=0;i<MAX_CELL_SERIES;i++)
+			{
+				buffer[ind++] = (VESC_CAN_DATA.pBMS_BAL->BMS_BAT.i & (1 << i)) ? 1 : 0;
+			}
+			buffer[ind++] = MAX_TEMP_SENSORS;
+			for(i=0;i<MAX_TEMP_SENSORS;i++)
+			{
+				buffer_append_int16(buffer, VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[i], &ind);
+			}
+			buffer_append_int16(buffer, VESC_CAN_DATA.pBMS_HUM->Temp_IC, &ind);
+			buffer_append_int16(buffer, VESC_CAN_DATA.pBMS_HUM->Temp_Hum_Sensor, &ind);
+			buffer_append_int16(buffer, VESC_CAN_DATA.pBMS_HUM->Humidity, &ind);
+			buffer_append_float16(buffer, VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max, 100, &ind);
+			buffer_append_float16(buffer, VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soc, 1000, &ind);
+			buffer_append_float16(buffer, VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soh, 1000, &ind);
+			buffer[ind++] = CAN_ID;
+			buffer_append_float32_auto(buffer, VESC_CAN_DATA.pBMS_AH_WH_CHG_TOTAL->Ah_Charge_Total.f, &ind);
+			buffer_append_float32_auto(buffer, VESC_CAN_DATA.pBMS_AH_WH_CHG_TOTAL->Wh_Charge_Total.f, &ind);
+			buffer_append_float32_auto(buffer, VESC_CAN_DATA.pBMS_AH_WH_DIS_TOTAL->Ah_Discharge_Total.f, &ind);
+			buffer_append_float32_auto(buffer, VESC_CAN_DATA.pBMS_AH_WH_DIS_TOTAL->Wh_Discharge_Total.f, &ind);
+			buffer_append_int16(buffer, VESC_CAN_DATA.pBMS_HUM->Pressure, &ind);
 			if (reply_to != 0)
 			{
 				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
