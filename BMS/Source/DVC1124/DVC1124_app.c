@@ -127,7 +127,7 @@ void DVC1124_Task(void)
 			if(DVC11XX_ReadRegs(AFE_ADDR_R(4), 3))	//读读CC2
 			{
 				DVC_1124.Current_CC2 = DVC11XX_Calc_CurrentWithCC2(CurrentSenseResistance_mR);
-				VESC_CAN_DATA.pBMS_I->Input_Current_BMS_IC.f = DVC_1124.Current_CC2;
+				VESC_CAN_DATA.pBMS_I->Input_Current_BMS_IC.f = -DVC_1124.Current_CC2;
 			}
 		}
 		
@@ -144,5 +144,5 @@ void DVC1124_Task(void)
 		
 	}
 }
-	
+
 
