@@ -54,7 +54,8 @@ jobs:
         run: |
           ./build.sh || true
           missing=0
-          [ ! -f bms_adv2.hex ] && echo "::warning::ADV2 firmware failed to build" && missing=1
+          [ ! -f bms_adv2.bin ] && echo "::warning::ADV2 firmware failed to build" && missing=1
+          [ ! -f bms_bootloader.bin ] && echo "::warning::Bootloader failed to build" && missing=1
           [ "$missing" -eq 0 ] && true || false
 
       - name: Upload artifacts
@@ -62,12 +63,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: firmware
-          path: ./BMS/*.hex
+          path: |
+            ./BMS/*.bin
+            ./BMS/*.hex
 
       - name: Rename release files
         if: startsWith(github.ref, 'refs/tags/bms@')
         working-directory: ./BMS
         run: |
+          for file in *.bin; do
+            mv "$file" "${file%.bin}_${{ steps.version-info.outputs.version-suffix }}.bin"
+          done
           for file in *.hex; do
             mv "$file" "${file%.hex}_${{ steps.version-info.outputs.version-suffix }}.hex"
           done
@@ -77,6 +83,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: "BMS v${{ steps.version-info.outputs.version }}"
-          files: ./BMS/*.hex
+          files: |
+            ./BMS/*.bin
+            ./BMS/*.hex
           generate_release_notes: true
           prerelease: ${{ steps.version-info.outputs.is-prerelease }}

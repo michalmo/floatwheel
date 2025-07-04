@@ -12,7 +12,7 @@
 #include "flag.h"
 
 #define CAN_TX_QUEUE_SIZE 160
-#define CAN_RX_QUEUE_SIZE 20
+#define CAN_RX_QUEUE_SIZE 80
 #define RX_BUFFER_SIZE 520
 
 #define MAX_TEMP_SENSORS 9

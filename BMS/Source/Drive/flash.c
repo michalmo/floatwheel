@@ -1,5 +1,12 @@
+#include "mem.h"
 #include "flash.h"
+#include "buffer.h"
+#include "crc.h"
+#include "flag.h"
 #include <string.h>
+
+// place storage in retained SRAM2 region
+uint32_t bootloader_trigger __attribute__((__AT("0x20007FFC")));
 
 void Flash_Init(void)
 {
@@ -62,4 +69,129 @@ bool Flash_Write_Storage(void)
 void Flash_Load_Storage(void)
 {
 	memcpy((void*)&storage, (uint8_t*)FLASH_STORAGE_START_ADDRESS, sizeof(storage_data));
+}
+
+bool Flash_Erase_New_Firmware(uint32_t size)
+{
+	if (FLASH_NEW_FIRMWARE_END_ADDRESS - FLASH_NEW_FIRMWARE_START_ADDRESS < size)
+	{
+		return false;
+	}
+	return Flash_Erase(FLASH_NEW_FIRMWARE_START_ADDRESS, FLASH_NEW_FIRMWARE_START_ADDRESS + size);
+}
+
+bool Flash_Write_New_Firmware(uint32_t offset, uint8_t *data, uint32_t len)
+{
+	if(offset >= VESC_TOOL_BOOTLOADER_OFFSET)
+	{
+		// not compatible with VESC BMS bootloader
+		return false;
+	}
+	return Flash_Write(FLASH_NEW_FIRMWARE_START_ADDRESS + offset, (uint32_t*)data, len);
+}
+
+bool Flash_Verify_New_Firmware(void)
+{
+	uint8_t *pdata = (uint8_t*)FLASH_NEW_FIRMWARE_START_ADDRESS;
+	int32_t ind = 0;
+	uint32_t firmware_size = buffer_get_uint32(pdata, &ind);
+	uint16_t firmware_crc = buffer_get_uint16(pdata, &ind);
+	
+	return (
+		firmware_size != 0 &&
+		firmware_size <= FLASH_MAIN_FIRMWARE_END_ADDRESS - FLASH_MAIN_FIRMWARE_START_ADDRESS &&
+		crc16(pdata + ind, firmware_size) == firmware_crc
+	);
+}
+
+bool Flash_Verify_Main_Firmware(void)
+{
+	uint8_t *pdata = (uint8_t*)FLASH_NEW_FIRMWARE_START_ADDRESS;
+	int32_t ind = 0;
+	uint32_t firmware_size = buffer_get_uint32(pdata, &ind);
+	uint16_t firmware_crc = buffer_get_uint16(pdata, &ind);
+	
+	return (
+		firmware_size != 0 &&
+		firmware_size <= FLASH_MAIN_FIRMWARE_END_ADDRESS - FLASH_MAIN_FIRMWARE_START_ADDRESS &&
+		crc16((uint8_t*)FLASH_MAIN_FIRMWARE_START_ADDRESS, firmware_size) == firmware_crc
+	);
+}
+
+bool Flash_Copy_New_Firmware_To_Main_Firmware(void)
+{
+	uint8_t *pdata = (uint8_t*)FLASH_NEW_FIRMWARE_START_ADDRESS;
+	int32_t ind = 0;
+	uint32_t firmware_size = buffer_get_uint32(pdata, &ind);
+	uint16_t firmware_crc = buffer_get_uint16(pdata, &ind);
+
+	// pad to multiple of 4 bytes
+	while ((firmware_size % 4) != 0)
+	{
+		firmware_size++;
+	}
+	return (
+		Flash_Erase(FLASH_MAIN_FIRMWARE_START_ADDRESS, FLASH_MAIN_FIRMWARE_START_ADDRESS + firmware_size) &&
+		Flash_Write(FLASH_MAIN_FIRMWARE_START_ADDRESS, (uint32_t*)(pdata + ind), firmware_size)
+	);
+}
+
+bool Flash_Erase_Bootloader(void)
+{
+	return Flash_Erase(FLASH_BOOTLOADER_START_ADDRESS, FLASH_BOOTLOADER_END_ADDRESS);
+}
+
+bool Flash_Write_Bootloader(uint32_t offset, uint8_t *data, uint32_t len)
+{
+	if(offset >= VESC_TOOL_BOOTLOADER_OFFSET)
+	{
+		// this should never happen
+		return false;
+	}
+	return Flash_Write(FLASH_BOOTLOADER_START_ADDRESS + offset, (uint32_t*)data, len);
+}
+
+void Flash_Enter_Bootloader(void)
+{
+	bootloader_trigger = BOOTLOADER_INIT_MAGIC_WORD;
+	Flag.Power = 3;
+}
+
+void Flash_Exit_Bootloader(void)
+{
+	bootloader_trigger = BOOTLOADER_DONE_MAGIC_WORD;
+	NVIC_SystemReset();
+}
+
+void Flash_Maybe_Jump_To_Bootloader(void)
+{
+	if(bootloader_trigger != BOOTLOADER_INIT_MAGIC_WORD)
+	{
+		return;
+	}
+	// clear magic word
+	bootloader_trigger = 0;
+
+	const volatile uint32_t* bootloader_data = (volatile uint32_t*)FLASH_BOOTLOADER_START_ADDRESS;
+	uint32_t stack_pointer = bootloader_data[0];
+	void (*bootloader_entry_point)(void) = (void (*)(void))(bootloader_data[1]);
+	// clear interrupts
+	for(int i = 0;i < 8U;i++) {
+		NVIC->ICER[i] = 0xFFFFFFFF;
+		NVIC->ICPR[i] = 0xFFFFFFFF;
+	}
+	// jump to bootloader
+	__set_MSP(stack_pointer);
+	bootloader_entry_point();
+}
+
+bool Flash_Did_Return_From_Bootloader(void)
+{
+	if(bootloader_trigger != BOOTLOADER_DONE_MAGIC_WORD)
+	{
+		return false;
+	}
+
+	bootloader_trigger = 0;
+	return true;
 }

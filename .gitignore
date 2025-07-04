@@ -1,4 +1,5 @@
 .DS_Store
+*.bin
 *.hex
 
 .vscode/settings.json
@@ -13,3 +14,13 @@
 /*/Project/MDK5/*.cbuild-set.yml
 /*/Project/MDK5/*.cbuild.yml
 /*/Project/MDK5/*.cbuild-run.yml
+/*/Project/Bootloader/Objects/
+/*/Project/Bootloader/Listings/
+/*/Project/Bootloader/out/
+/*/Project/Bootloader/tmp/
+/*/Project/Bootloader/.clangd
+/*/Project/Bootloader/*.uvguix.*
+/*/Project/Bootloader/*.cbuild-idx.yml
+/*/Project/Bootloader/*.cbuild-set.yml
+/*/Project/Bootloader/*.cbuild.yml
+/*/Project/Bootloader/*.cbuild-run.yml

@@ -13,6 +13,7 @@
   ----------------------------------------------------------------------------*/
 #include "n32l40x.h"
 #include "conf_general.h"
+#include "flash.h"
 #include "can.h"
 #include "User_Delay_Config.h"
 #include "vesc_can.h"
@@ -46,6 +47,8 @@ RCC_ClocksType System_Clock;
  **************************************************/
 int main(void)
 {
+	Flash_Maybe_Jump_To_Bootloader();
+
 	RCC_GetClocksFreqValue(&System_Clock);
 	Config_Init();
 	BMS_Logged_Faults_Init();
@@ -84,6 +87,13 @@ int main(void)
 		CHARG_OFF;
 		Flag.Software_Reset = 0;
 		Flag.Power = 2;
+	}
+	else if(Flash_Did_Return_From_Bootloader())
+	{
+#if IWDG_DEBUG
+		IWDG_Init();
+#endif
+		Flag.Power = 1;
 	}
 	else if(((RCC->CTRLSTS>>28)&1) == 1)	//软件复位
 	{

@@ -739,6 +739,14 @@ void VESC_CAN_Receive_Task(void)
 	can_rx_queue_size--;
 }
 
+bool VESC_Check_Command_HW(uint8_t *pdata,int32_t *ind)
+{
+	HW_TYPE hw = pdata[(*ind)++];
+	char *hw_name = (char*)(pdata + *ind);
+	*ind += strlen(hw_name) + 1;
+	return hw == HW_TYPE_VESC_BMS && strcmp(hw_name, HW_NAME) == 0;
+}
+
 void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 {
 	int32_t ind = 0;
@@ -751,6 +759,10 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 	int32_t value32;
 	bool baud_changed = false;
 	bool DVC1124_config_changed = false;
+	static bool flash_bootloader = false;
+	static uint32_t flash_firmware_size = 0;
+	static uint16_t flash_prev_trailing_bytes;
+	bool flash_res;
 
 	if(!len)
 	{
@@ -912,6 +924,142 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			buffer_append_int32(buffer, ofs_conf, &ind);
 			memcpy(buffer + ind, data_main_config_t_ + ofs_conf, len_conf);
 			ind += len_conf;
+			if(reply_to != 0)
+			{
+				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+			}
+		break;
+
+		case COMM_JUMP_TO_BOOTLOADER_ALL_CAN_HW:
+		case COMM_JUMP_TO_BOOTLOADER_HW:
+		case COMM_JUMP_TO_BOOTLOADER_ALL_CAN:
+		case COMM_JUMP_TO_BOOTLOADER:
+			if(
+				(packet_id == COMM_JUMP_TO_BOOTLOADER_ALL_CAN_HW || packet_id == COMM_JUMP_TO_BOOTLOADER_HW) &&
+				!VESC_Check_Command_HW(pdata,&ind)
+			)
+			{
+				break;
+			}
+			if(!flash_bootloader)
+			{
+				Flash_Enter_Bootloader();
+			}
+		break;
+
+		case COMM_ERASE_NEW_APP_ALL_CAN_HW:
+		case COMM_ERASE_NEW_APP_HW:
+		case COMM_ERASE_NEW_APP_ALL_CAN:
+		case COMM_ERASE_NEW_APP:
+			if(
+				(packet_id == COMM_ERASE_NEW_APP_ALL_CAN_HW || packet_id == COMM_ERASE_NEW_APP_HW) &&
+				!VESC_Check_Command_HW(pdata,&ind)
+			)
+			{
+				break;
+			}
+			flash_firmware_size = buffer_get_uint32(pdata,&ind);
+			// not compatible with vesc bms bootloader, so repurpose the firmware
+			// update command to flash the bootloader based on firmware size
+			flash_bootloader = flash_firmware_size <= FLASH_BOOTLOADER_END_ADDRESS - FLASH_BOOTLOADER_START_ADDRESS;
+			if(flash_bootloader)
+			{
+				flash_res = Flash_Erase_Bootloader();
+			}
+			else
+			{
+				flash_res = Flash_Erase_New_Firmware(flash_firmware_size);
+			}
+
+			ind = 0;
+			buffer[ind++] = COMM_ERASE_NEW_APP;
+			buffer[ind++] = flash_res;
+			if(reply_to != 0)
+			{
+				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+			}
+		break;
+
+		case COMM_ERASE_BOOTLOADER_ALL_CAN_HW:
+		case COMM_ERASE_BOOTLOADER_HW:
+		case COMM_ERASE_BOOTLOADER_ALL_CAN:
+		case COMM_ERASE_BOOTLOADER:
+			// not compatible with vesc bms bootloader, always reply false here
+			ind = 0;
+			buffer[ind++] = COMM_ERASE_BOOTLOADER;
+			buffer[ind++] = 0;
+			if(reply_to != 0)
+			{
+				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+			}
+		break;
+
+		case COMM_WRITE_NEW_APP_DATA_ALL_CAN_HW:
+		case COMM_WRITE_NEW_APP_DATA_HW:
+		case COMM_WRITE_NEW_APP_DATA_ALL_CAN:
+		case COMM_WRITE_NEW_APP_DATA:
+			if(
+				(packet_id == COMM_WRITE_NEW_APP_DATA_ALL_CAN_HW || packet_id == COMM_WRITE_NEW_APP_DATA_HW) &&
+				!VESC_Check_Command_HW(pdata,&ind)
+			)
+			{
+				break;
+			}
+			uint32_t new_firmware_offset = buffer_get_uint32(pdata,&ind);
+			if(new_firmware_offset == 0)
+			{
+				flash_firmware_size = buffer_get_uint32(pdata,&ind);
+				ind -= 4;
+				flash_bootloader = flash_firmware_size <= FLASH_BOOTLOADER_END_ADDRESS - FLASH_BOOTLOADER_START_ADDRESS;
+			}
+			if(flash_bootloader)
+			{
+				// VESC Tool prepends firmware with 4 bytes firmware size and 2 bytes
+				// crc, this needs to be skipped when flashing the bootloader, while
+				// taking care write whole words to flash.
+				if(new_firmware_offset == 0)
+				{
+					ind += 6;
+					len -= 2;
+				}
+				else
+				{
+					new_firmware_offset -= 8;
+					// prepend with unaligned bytes from previous chunk
+					ind -= 2;
+					*(uint16_t*)(pdata+ind) = flash_prev_trailing_bytes;
+					// skip last bytes from middle chunks
+					if(new_firmware_offset+len-ind < flash_firmware_size)
+					{
+						len -= 2;
+					}
+					// write final chunk to end
+					else
+					{
+						// Pad to multiple of 4 bytes
+						while(((len-ind) % 4) != 0)
+						{
+							pdata[len++] = 0;
+						}
+					}
+				}
+				flash_res = Flash_Write_Bootloader(new_firmware_offset,pdata+ind, len-ind);
+				flash_prev_trailing_bytes = *(uint16_t*)(pdata+len);
+			}
+			else
+			{
+				// Pad to multiple of 4 bytes
+				while(((len-ind) % 4) != 0)
+				{
+					pdata[len++] = 0;
+				}
+				flash_res = Flash_Write_New_Firmware(new_firmware_offset,pdata+ind, len-ind);
+			}
+
+			ind = 0;
+			buffer[ind++] = COMM_WRITE_NEW_APP_DATA;
+			buffer[ind++] = flash_res;
+			buffer_append_uint32(buffer,new_firmware_offset,&ind);
 			if(reply_to != 0)
 			{
 				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);

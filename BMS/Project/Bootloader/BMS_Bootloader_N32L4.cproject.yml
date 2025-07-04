@@ -3,7 +3,6 @@ project:
     base-name: bms_$OutputName$
     type:
       - bin
-      - hex
   packs:
     - pack: NSING::N32L40x_DFP@1.0.1
   setups:
@@ -17,7 +16,6 @@ project:
         - ../../Source/App
         - ../../Source/Config
         - ../../Source/Drive
-        - ../../Source/DVC1124
         - ../../Source/User
         - ../../Source/VESC
       define:
@@ -69,12 +67,11 @@ project:
             - --summary_stderr
             - --info summarysizes
   linker:
-    - script: Objects/BMS_VESC_Code_N32L4.sct
+    - script: Objects/BMS_Bootloader_N32L4.sct
   groups:
     - group: User
       files:
-        - file: ../../Source/User/main.c
-        - file: ../../Source/User/n32l40x_it.c
+        - file: ../../Source/User/bootloader.c
         - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/CMSIS/device/system_n32l40x.c
     - group: Startup
       files:
@@ -85,44 +82,13 @@ project:
     - group: Config
       files:
         - file: ../../Source/Config/confparser.c
-        - file: ../../Source/Config/confxml.c
         - file: ../../Source/Config/conf_general.c
     - group: App
       files:
-        - file: ../../Source/App/led_app.c
         - file: ../../Source/App/flag.c
-        - file: ../../Source/App/vesc_can.c
-        - file: ../../Source/App/vesc_can_app.c
-        - file: ../../Source/App/key_app.c
-        - file: ../../Source/App/power_app.c
-        - file: ../../Source/App/BMS_Protection.c
-    - group: DVC1124
-      files:
-        - file: ../../Source/DVC1124/DVC11XX.c
-        - file: ../../Source/DVC1124/DVC1124_init.c
-        - file: ../../Source/DVC1124/DVC1124_app.c
-        - file: ../../Source/DVC1124/Voltage.c
-        - file: ../../Source/DVC1124/Sleep.c
-        - file: ../../Source/DVC1124/Temperature.c
-        - file: ../../Source/DVC1124/Current.c
-        - file: ../../Source/DVC1124/BalanceDemo.c
-        - file: ../../Source/DVC1124/CellBalance.c
     - group: Drive
       files:
         - file: ../../Source/Drive/led.c
-        - file: ../../Source/Drive/User_Delay_Config.c
-        - file: ../../Source/Drive/time6.c
-        - file: ../../Source/Drive/ldo.c
-        - file: ../../Source/Drive/mos.c
-        - file: ../../Source/Drive/charger.c
-        - file: ../../Source/Drive/can.c
-        - file: ../../Source/Drive/key.c
-        - file: ../../Source/Drive/i2c.c
-        - file: ../../Source/Drive/ppm.c
-        - file: ../../Source/Drive/pwr.c
-        - file: ../../Source/Drive/gp2.c
-        - file: ../../Source/Drive/iwdg.c
-        - file: ../../Source/Drive/wwdg.c
         - file: ../../Source/Drive/flash.c
     - group: VESC
       files:
@@ -130,15 +96,6 @@ project:
         - file: ../../Source/VESC/crc.c
     - group: Library
       files:
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/misc.c
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_can.c
         - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_gpio.c
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_i2c.c
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_iwdg.c
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_pwr.c
         - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_rcc.c
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_tim.c
         - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_flash.c
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_dbg.c
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_exti.c
-        - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/n32l40x_wwdg.c
