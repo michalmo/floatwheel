@@ -1,8 +1,10 @@
+#include "mem.h"
 #include "conf_general.h"
 #include "confparser.h"
 #include "flash.h"
 
-storage_data storage;
+// place storage in retained SRAM2 region
+storage_data storage __attribute__((__AT("0x20006000")));
 
 void Config_Init()
 {
