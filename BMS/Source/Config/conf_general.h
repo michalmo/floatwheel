@@ -3,6 +3,10 @@
 #ifndef CONF_GENERAL_H_
 #define CONF_GENERAL_H_
 
+// Init codes for the persistent storage. Change the config code when updating
+// the config struct in a way that is not backwards compatible.
+#define VAR_INIT_CODE 93462984
+
 #define HW_NAME "Floatwheel BMS"
 #define VESC_FW_VERSION_MAJOR 6 // must be 6 or VESC Tool will warn
 #define VESC_FW_VERSION_MINOR 5 // must be 5 or VESC Tool will enter limited mode
@@ -15,7 +19,7 @@
 #define HW_DEFAULT_ID CONF_CONTROLLER_ID
 #endif
 
-extern main_config_t config;
+extern storage_data storage;
 
 void Config_Init();
 

@@ -1060,6 +1060,27 @@ typedef struct {
 	float cell_voltage_sag_comp_23;
 } main_config_t;
 
+typedef struct {
+	// Store CAN-related settings separate from config as well. This is done in order
+	// to retain the CAN-settings after doing distributed firmware updates that change
+	// the main config signature.
+	uint32_t controller_id_init_flag;
+	uint16_t controller_id;
+	uint32_t can_baud_rate_init_flag;
+	CAN_BAUD can_baud_rate;
+
+	// Counter for how many times data has been written to flash
+	uint32_t conf_flash_write_cnt_init_flag;
+	uint32_t conf_flash_write_cnt;
+
+	// BMS configuration structure
+	uint32_t config_init_flag;
+	main_config_t config;
+
+	// Pad since flash is written 4 bytes at a time
+	volatile uint32_t pad1;
+} storage_data;
+
 // Communication commands
 typedef enum {
 	COMM_FW_VERSION = 0,

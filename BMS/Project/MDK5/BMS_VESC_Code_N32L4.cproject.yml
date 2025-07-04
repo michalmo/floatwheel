@@ -121,6 +121,7 @@ project:
         - file: ../../Source/Drive/gp2.c
         - file: ../../Source/Drive/iwdg.c
         - file: ../../Source/Drive/wwdg.c
+        - file: ../../Source/Drive/flash.c
     - group: VESC
       files:
         - file: ../../Source/VESC/buffer.c

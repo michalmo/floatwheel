@@ -3,6 +3,7 @@
 #include "buffer.h"
 #include "confparser.h"
 #include "confxml.h"
+#include "flash.h"
 #include "n32l40x_can.h"
 
 CAN_BMS_V_TOT 	BMS_V_TOT = 
@@ -776,7 +777,7 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 
 			if(packet_id == COMM_GET_CUSTOM_CONFIG)
 			{
-				*conf_ptr = config;
+				*conf_ptr = storage.config;
 			}
 			else
 			{
@@ -793,14 +794,14 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 		break;
 
 		case COMM_SET_CUSTOM_CONFIG:
-  		conf_ptr = &conf;
-  		conf_ind = pdata[0];
+			conf_ptr = &conf;
+			conf_ind = pdata[0];
 
 			if(conf_ind == 0 &&
 				 confparser_deserialize_main_config_t(pdata + 1, conf_ptr))
 			{
-				config = *conf_ptr;
-				// flash_helper_store_backup_data();
+				storage.config = *conf_ptr;
+				Flash_Write_Storage();
 
 				buffer[ind++] = packet_id;
 				if (reply_to != 0)
@@ -810,7 +811,7 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			}
 			else if(reply_to != 0)
 			{
-	  	  VESC_Printf(reply_to, "Warning: Could not set configuration");
+				VESC_Printf(reply_to, "Warning: Could not set configuration");
 			}
 		break;
 

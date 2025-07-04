@@ -595,6 +595,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\Source\Drive\wwdg.c</FilePath>
             </File>
+            <File>
+              <FileName>flash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Source\Drive\flash.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
