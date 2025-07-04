@@ -48,6 +48,7 @@ int main(void)
 {
 	RCC_GetClocksFreqValue(&System_Clock);
 	Config_Init();
+	BMS_Logged_Faults_Init();
 	GP2_Init();
 	User_Delay_init();
 	User_Delay_xms(10);

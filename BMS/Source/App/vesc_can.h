@@ -11,7 +11,7 @@
 #include "crc.h"
 #include "flag.h"
 
-#define CAN_TX_QUEUE_SIZE 100
+#define CAN_TX_QUEUE_SIZE 160
 #define CAN_RX_QUEUE_SIZE 20
 #define RX_BUFFER_SIZE 520
 

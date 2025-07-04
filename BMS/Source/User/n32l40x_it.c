@@ -34,6 +34,7 @@
  */
 #include "n32l40x_it.h"
 #include "flag.h"
+#include "BMS_Protection.h"
 #include "vesc_can.h"
 #include "key.h"
 #include "mos.h"
@@ -131,6 +132,8 @@ void TIM6_IRQHandler(void)
 		Software_Counter_1ms.Overtemperature_Protection_Delay++;
 		Software_Counter_1ms.Overvoltage_Protection_Delay++;
 		Software_Counter_1ms.Undervoltage_No_Charge_Delay++;
+		Software_Counter_1ms.System_Time++;
+		logged_faults.time_ms++;
 		KEY1_Scan();
     }
 }

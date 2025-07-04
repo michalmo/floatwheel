@@ -7,6 +7,7 @@
 #include "mos.h"
 #include "n32l40x_can.h"
 #include "DVC1124_init.h"
+#include "BMS_Protection.h"
 
 CAN_BMS_V_TOT 	BMS_V_TOT = 
 {
@@ -82,6 +83,48 @@ VESC_CAN_TYPE VESC_CAN_DATA =
 	.pBMS_AH_WH_CHG_TOTAL 	= &BMS_AH_WH_CHG_TOTAL,
 	.pBMS_AH_WH_DIS_TOTAL	= &BMS_AH_WH_DIS_TOTAL,
 };
+
+const char* BMS_Convert_Fault_To_Name(bms_fault_code fault)
+{
+	switch(fault)
+	{
+		case BMS_FAULT_CODE_NONE:
+			return "No fault";
+		break;
+
+		case BMS_FAULT_CODE_OVERVOLTAGE:
+			return "High Voltage";
+		break;
+
+		case BMS_FAULT_CODE_UNDERVOLTAGE:
+			return "Low Voltage";
+		break;
+
+		case BMS_FAULT_CODE_DISCHARGE_OVERCURRENT:
+			return "High Charge Current";
+		break;
+
+		case BMS_FAULT_CODE_CHARGE_OVERCURRENT:
+			return "Low Charge Current";
+		break;
+
+		case BMS_FAULT_CODE_SHORT_CIRCUIT:
+			return "Short-Circuit";
+		break;
+
+		case BMS_FAULT_CODE_OVERTEMPERATURE:
+			return "High Temperature";
+		break;
+
+		case BMS_FAULT_CODE_LOWTEMPERATURE:
+			return "Low Temperature";
+		break;
+
+		default:
+			return "Unknown fault";
+		break;
+	}
+}
 
 CanTxMessage CAN_TX_Config;
 can_queued_message can_tx_queue[CAN_TX_QUEUE_SIZE];
@@ -978,11 +1021,192 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 
 void VESC_Process_Terminal_Command(char *str,uint8_t can_id)
 {
+	int i;
+
 	VESC_Printf(can_id,"-> %s\n",str);
 
 	if (strcmp(str, "ping") == 0)
 	{
 		VESC_Printf(can_id,"pong\n");
+	}
+	else if (strcmp(str, "fault") == 0)
+	{
+		bool fault = false;
+		if(Flag.Overvoltage)
+		{
+			fault = true;
+			VESC_Printf(can_id,"%s\n", BMS_Convert_Fault_To_Name(BMS_FAULT_CODE_OVERVOLTAGE));
+		}
+		if(Flag.Undervoltage)
+		{
+			fault = true;
+			VESC_Printf(can_id,"%s\n", BMS_Convert_Fault_To_Name(BMS_FAULT_CODE_UNDERVOLTAGE));
+		}
+		if(Flag.Electric_Discharge_Overcurrent)
+		{
+			fault = true;
+			VESC_Printf(can_id,"%s\n", BMS_Convert_Fault_To_Name(BMS_FAULT_CODE_DISCHARGE_OVERCURRENT));
+		}
+		if(Flag.Charging_Overcurrent)
+		{
+			fault = true;
+			VESC_Printf(can_id,"%s\n", BMS_Convert_Fault_To_Name(BMS_FAULT_CODE_CHARGE_OVERCURRENT));
+		}
+		if(Flag.Short_Circuit)
+		{
+			fault = true;
+			VESC_Printf(can_id,"%s\n", BMS_Convert_Fault_To_Name(BMS_FAULT_CODE_SHORT_CIRCUIT));
+		}
+		if(Flag.Overtemperature)
+		{
+			fault = true;
+			VESC_Printf(can_id,"%s\n", BMS_Convert_Fault_To_Name(BMS_FAULT_CODE_OVERTEMPERATURE));
+		}
+		if(Flag.Lowtemperature)
+		{
+			fault = true;
+			VESC_Printf(can_id,"%s\n", BMS_Convert_Fault_To_Name(BMS_FAULT_CODE_LOWTEMPERATURE));
+		}
+		if(!fault)
+		{
+			fault = true;
+			VESC_Printf(can_id,"%s\n", BMS_Convert_Fault_To_Name(BMS_FAULT_CODE_NONE));
+		}
+	}
+	else if (strcmp(str, "faults") == 0)
+	{
+		if(logged_faults.index == 0)
+		{
+			VESC_Printf(can_id,"No faults registered\n");
+		}
+		else
+		{
+			VESC_Printf(can_id,"The following faults were registered since start:\n");
+			for(i = 0;i < logged_faults.index;i++) {
+				VESC_Printf(
+					can_id,
+					"Fault            : %s\n"
+					"Fault Age        : %.0f s\n"
+					"Current IC       : %.2f A\n"
+					"Temp Batt        : %.2f deg C\n"
+					"Temp IC          : %.2f deg C\n"
+					"Temp PCB         : %.2f deg C\n"
+					"V Cell Min       : %.3f V\n"
+					"V Cell Max       : %.3f V\n",
+					BMS_Convert_Fault_To_Name(logged_faults.faults[i].fault),
+					(logged_faults.time_ms - logged_faults.faults[i].fault_time_ms) / 1000.0,
+					logged_faults.faults[i].current_ic,
+					logged_faults.faults[i].temp_batt,
+					logged_faults.faults[i].temp_ic,
+					logged_faults.faults[i].temp_pcb,
+					logged_faults.faults[i].v_cell_min,
+					logged_faults.faults[i].v_cell_max
+				);
+			}
+		}
+	}
+	else if (strcmp(str, "faults_clear") == 0)
+	{
+		logged_faults.index = 0;
+		VESC_Printf(can_id,"Cleared.\n");
+	}
+	else if (strcmp(str, "volt") == 0)
+	{
+		VESC_Printf(can_id,"Input voltage: %.2f\n",VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f);
+	}
+	else if (strcmp(str, "hw_status") == 0)
+	{
+		uint8_t* uid =(uint8_t*)UID_BASE;
+		VESC_Printf(
+			can_id,
+			"Hardware: %s\n"
+			"Firmware: %d.%d\n"
+			"UUID: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n"
+			"Charging: %s\n"
+			"Balancing: %s\n"
+			"Charge Allowed: %s\n"
+			"Charge OK: %s\n"
+			"CAN TX queue now: %d highest: %d max: %d\n"
+			"CAN RX queue now: %d highest: %d max: %d\n"
+			"Configuration flash write counter: %d\n",
+			HW_NAME,
+			VESC_FW_VERSION_MAJOR,
+			VESC_FW_VERSION_MINOR,
+			uid[0],
+			uid[1],
+			uid[2],
+			uid[3],
+			uid[4],
+			uid[5],
+			uid[6],
+			uid[7],
+			uid[8],
+			uid[9],
+			uid[10],
+			uid[11],
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charging ? "true" : "false",
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Balancing ? "true" : "false",
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_Allowed ? "true" : "false",
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK ? "true" : "false",
+			can_tx_queue_size,
+			can_tx_queue_size_max,
+			CAN_TX_QUEUE_SIZE,
+			can_rx_queue_size,
+			can_rx_queue_size_max,
+			CAN_RX_QUEUE_SIZE,
+			storage.conf_flash_write_cnt
+		);
+	}
+	else if (strcmp(str, "uptime") == 0)
+	{
+		VESC_Printf(can_id, "Uptime: %.2f s\n", Software_Counter_1ms.System_Time / 1000.0);
+	}
+	else if (strcmp(str, "bms_get_values") == 0)
+	{
+		VESC_Printf(
+			can_id,
+			"V tot: %.2f V charge: %.2f\n"
+			"I in: %.2f I in_ic: %.2f\n"
+			"Ah: %.2f Wh: %.2f\n"
+			"Ah charge tot: %.2f discharge tot: %.2f\n"
+			"Wh charge tot: %.2f discharge tot: %.2f",
+			VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f,
+			VESC_CAN_DATA.pBMS_V_TOT->Charge_Input_Voltage.f,
+			VESC_CAN_DATA.pBMS_I->Input_Current.f,
+			VESC_CAN_DATA.pBMS_I->Input_Current_BMS_IC.f,
+			VESC_CAN_DATA.pBMS_AH_WH->Ah_Counter.f,
+			VESC_CAN_DATA.pBMS_AH_WH->Wh_Counter.f,
+			VESC_CAN_DATA.pBMS_AH_WH_CHG_TOTAL->Ah_Charge_Total.f,
+			VESC_CAN_DATA.pBMS_AH_WH_DIS_TOTAL->Ah_Discharge_Total.f,
+			VESC_CAN_DATA.pBMS_AH_WH_CHG_TOTAL->Wh_Charge_Total.f,
+			VESC_CAN_DATA.pBMS_AH_WH_DIS_TOTAL->Wh_Discharge_Total.f
+		);
+
+		VESC_Printf(can_id,"\nCell\tV\tBalancing");
+		for(i=0;i<storage.config.cell_num;i++)
+		{
+			VESC_Printf(can_id,"C%d\t%.3f\t%s", i+1, VESC_CAN_DATA.pBMS_V_CELL->BMS_Single_Voltage[i] / 1000.0, (VESC_CAN_DATA.pBMS_BAL->BMS_BAT.i & (1 << i)) ? "Yes" : "No");
+		}
+
+		VESC_Printf(can_id,"\nTemp\tdeg C\nIc\t%.2f", VESC_CAN_DATA.pBMS_HUM->Temp_IC / 100.0);
+		for(i=0;i<MAX_TEMP_SENSORS;i++)
+		{
+			VESC_Printf(can_id,"T%d\t%.2f", i+2, VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[i] / 100.0);
+		}
+
+		VESC_Printf(
+			can_id,
+			"\nHum: %.2f temp: %.2f\n"
+			"Highest cell temp: %.2f\n"
+			"Soc: %.2f Soh: %.2f\n"
+			"Can id: %d\n",
+			VESC_CAN_DATA.pBMS_HUM->Humidity / 100.0,
+			VESC_CAN_DATA.pBMS_HUM->Temp_Hum_Sensor / 100.0,
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max,
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soc * 100,
+			VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soh * 100,
+			storage.config.controller_id
+		);
 	}
 	else if (strcmp(str, "help") == 0)
 	{
@@ -993,6 +1217,22 @@ void VESC_Process_Terminal_Command(char *str,uint8_t can_id)
 			"  Show this help\n"
 			"ping\n"
 			"  Print pong here to see if the reply works\n"
+			"fault\n"
+			"  Prints the current fault code\n"
+			"faults\n"
+			"  Prints all stored fault codes and conditions when they arrived\n"
+			"faults_clear\n"
+			"  Clears all stored fault codes\n"
+			"volt\n"
+			"  Prints different voltages\n"
+			"hw_status\n"
+			"  Print some hardware status information.\n"
+			"fw_info\n"
+			"  Print detailed firmware info.\n"
+			"uptime\n"
+			"  Prints how many seconds have passed since boot.\n"
+			"bms_get_values\n"
+			"  Print bms data readings.\n"
 		);
 	}
 	else

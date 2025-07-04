@@ -1374,6 +1374,28 @@ typedef struct {
 	float info_args[2];
 } fault_data;
 
+typedef enum {
+	BMS_FAULT_CODE_NONE = 0,  // name collition, just use same value
+	BMS_FAULT_CODE_OVERVOLTAGE,
+	BMS_FAULT_CODE_UNDERVOLTAGE,
+	BMS_FAULT_CODE_DISCHARGE_OVERCURRENT,
+	BMS_FAULT_CODE_CHARGE_OVERCURRENT,
+	BMS_FAULT_CODE_SHORT_CIRCUIT,
+	BMS_FAULT_CODE_OVERTEMPERATURE,
+	BMS_FAULT_CODE_LOWTEMPERATURE,
+} bms_fault_code;
+
+typedef struct {
+	bms_fault_code fault;
+	uint64_t fault_time_ms;
+	float current_ic;
+	float temp_batt;
+	float temp_pcb;
+	float temp_ic;
+	float v_cell_min;
+	float v_cell_max;
+} bms_fault_data;
+
 typedef struct {
 	int js_x;
 	int js_y;

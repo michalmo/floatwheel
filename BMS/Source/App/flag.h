@@ -19,6 +19,7 @@ typedef struct
 	uint16_t Overvoltage_Protection_Delay;		//过压保护
 	uint16_t Overtemperature_Protection_Delay;
 	uint16_t Undervoltage_No_Charge_Delay;		//欠压保护禁止充电
+	uint64_t System_Time;
 	
 }Software_Counter_Type;
 

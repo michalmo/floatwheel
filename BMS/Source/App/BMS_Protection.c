@@ -1,3 +1,4 @@
+#include "mem.h"
 #include "BMS_Protection.h"
 #include "DVC11XX.h"
 #include "flag.h"
@@ -8,6 +9,43 @@
 #include "charger.h"
 #include "DVC1124_app.h"
 #include "ppm.h"
+
+logged_faults_data logged_faults __attribute__((__AT("0x20006400")));;
+
+void BMS_Logged_Faults_Init(void)
+{
+	if(logged_faults.init_flag != LOGGED_FAULTS_INIT_CODE)
+	{
+		logged_faults.init_flag = LOGGED_FAULTS_INIT_CODE;
+		logged_faults.index = 0;
+		logged_faults.time_ms = 0;
+	}
+}
+
+void Log_BMS_Fault(bms_fault_code fault)
+{
+	bms_fault_data data;
+	int i;
+	
+	data.fault = fault;
+	data.fault_time_ms = logged_faults.time_ms;
+	data.current_ic = -DVC_1124.Current_CC2;
+	data.temp_batt = VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max;
+	data.temp_pcb = DVC_1124.GP3_Temp;
+	data.temp_ic = DVC_1124.IC_Temp;
+	data.v_cell_min = DVC_1124.Single_Voltage_Min / 1000.0;
+	data.v_cell_max = DVC_1124.Single_Voltage_Max / 1000.0;
+	
+	logged_faults.faults[logged_faults.index++] = data;
+	if(logged_faults.index >= MAX_LOGGED_FAULTS)
+	{
+		for(i = 0;i < MAX_LOGGED_FAULTS - 1;i++)
+		{
+			logged_faults.faults[i] = logged_faults.faults[i + 1];
+		}
+		logged_faults.index = MAX_LOGGED_FAULTS - 1;
+	}
+}
 
 /**************************************************
  * @brie  :BMS_Overvoltage_Protection()
@@ -51,7 +89,11 @@ void BMS_Overvoltage_Protection(void)
 		CHARG_OFF;					//关闭充电器
 		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 		VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[3] = 9900;	//错误代码
-		Flag.Overvoltage = 1;
+		if(Flag.Overvoltage == 0)
+		{
+			Flag.Overvoltage = 1;
+			Log_BMS_Fault(BMS_FAULT_CODE_OVERVOLTAGE);
+		}
 		
 		if(newBals == 0 &&	//过压保护解除
 		   DVC_1124.Single_Voltage_Max < charge_end)
@@ -146,7 +188,6 @@ void BMS_Undervoltage_Protection(void)
 	if((val1 != 0) && (Software_Counter_1ms.Undervoltage_Protection_Delay > 15000)) //发生欠压并保持了15S
 	{
 		lock = 1;
-		Flag.Undervoltage = 1;
 		VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[4] = 9900;	//错误代码
 		
 		if(CHARGER == 0)	//没插入充电器，欠压保护关机
@@ -157,6 +198,12 @@ void BMS_Undervoltage_Protection(void)
 			PDSG_OFF;
 			PCHG_OFF;
 			Flag.Power = 3;
+		}
+		
+		if(Flag.Undervoltage == 0)
+		{
+			Flag.Undervoltage = 1;
+			Log_BMS_Fault(BMS_FAULT_CODE_UNDERVOLTAGE);
 		}
 		
 		if(DVC_1124.Single_Voltage_Min <= charge_start)
@@ -202,7 +249,6 @@ void BMS_Discharge_Overcurrent_Protection(void)
 	
 	if(DVC_1124.Current_CC2 > max_discharge_current)	//110A过流
 	{
-		Flag.Electric_Discharge_Overcurrent = 1;
 		VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[5] = 9900;	//错误代码
 		
 		if(Software_Counter_1ms.Discharge_Overcurrent_Delay >= discharge_overcurrent_delay)	//放电过流持续1S，关机
@@ -215,6 +261,12 @@ void BMS_Discharge_Overcurrent_Protection(void)
 			Flag.Power = 3;
 		}
 			
+		if(Flag.Electric_Discharge_Overcurrent == 0)
+		{
+			Flag.Electric_Discharge_Overcurrent = 1;
+			Log_BMS_Fault(BMS_FAULT_CODE_DISCHARGE_OVERCURRENT);
+		}
+		
 		r0 = g_AfeRegs.R0.cleanflag;
 		clean_flag &= ~(1<<2);
 		g_AfeRegs.R0.cleanflag = clean_flag;
@@ -253,11 +305,15 @@ void BMS_Charge_Overcurrent_Protection(void)
 	
 	if(DVC_1124.Current_CC2 < max_charge_current)	//20A过流
 	{
-		Flag.Charging_Overcurrent = 1;
 		CHARG_OFF;					//关闭充电器
 		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 		VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[6] = 9900;	//错误代码
 		lock = 1;
+		if(Flag.Charging_Overcurrent == 0)
+		{
+			Flag.Charging_Overcurrent = 1;
+			Log_BMS_Fault(BMS_FAULT_CODE_CHARGE_OVERCURRENT);
+		}
 		Software_Counter_1ms.Charge_Overcurrent_Delay = 0;
 	}
 	else if(DVC_1124.Current_CC2 > min_charge_current) //1A
@@ -311,7 +367,11 @@ void BMS_Short_Circuit_Protection(void)
 		PDSG_OFF;
 		PCHG_OFF;
 		Flag.Power = 3;
-		Flag.Short_Circuit = 1;
+		if(Flag.Short_Circuit == 0)
+		{
+			Flag.Short_Circuit = 1;
+			Log_BMS_Fault(BMS_FAULT_CODE_SHORT_CIRCUIT);
+		}
 	}
 }
 
@@ -340,11 +400,15 @@ void BMS_Overtemperature_Protection(void)
 		{
 			if(Software_Counter_1ms.Overtemperature_Protection_Delay >= overtemperature_delay)	//过温延时1S
 			{
-				Flag.Overtemperature = 1;
 				CHARG_OFF;					//关闭充电器
 				VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 				VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[7] = 9900;	//错误代码
 				lock = 1;
+				if(Flag.Overtemperature == 0)
+				{
+					Flag.Overtemperature = 1;
+					Log_BMS_Fault(BMS_FAULT_CODE_OVERTEMPERATURE);
+				}
 			}
 		}
 		else
@@ -402,11 +466,15 @@ void BMS_Low_Temperature_Protection(void)
 				(DVC_1124.GP4_Temp < charge_min)
 				)
 			{
-				Flag.Lowtemperature = 1;
 				CHARG_OFF;					//关闭充电器
 				VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_OK = 0;
 				VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[8] = 9900;	//错误代码
 				lock = 1;
+				if(Flag.Lowtemperature == 0)
+				{
+					Flag.Lowtemperature = 1;
+					Log_BMS_Fault(BMS_FAULT_CODE_LOWTEMPERATURE);
+				}
 			}
 		}
 		else
@@ -415,10 +483,14 @@ void BMS_Low_Temperature_Protection(void)
 				(DVC_1124.GP4_Temp < abs_min)
 				)
 			{
-				Flag.Lowtemperature = 1;
 				//没插入充电器没有动作
 				VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[8] = 9900;	//错误代码
 				lock = 1;
+				if(Flag.Lowtemperature == 0)
+				{
+					Flag.Lowtemperature = 1;
+					Log_BMS_Fault(BMS_FAULT_CODE_LOWTEMPERATURE);
+				}
 			}
 		}
 	}
