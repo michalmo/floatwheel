@@ -16,6 +16,7 @@ project:
         - ../../Source/Drive
         - ../../Source/DVC1124
         - ../../Source/User
+        - ../../Source/VESC
       define:
         - N32L40X
         - USE_STDPERIPH_DRIVER
@@ -114,6 +115,9 @@ project:
         - file: ../../Source/Drive/gp2.c
         - file: ../../Source/Drive/iwdg.c
         - file: ../../Source/Drive/wwdg.c
+    - group: VESC
+      files:
+        - file: ../../Source/VESC/buffer.c
     - group: Library
       files:
         - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/misc.c

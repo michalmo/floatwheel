@@ -341,7 +341,7 @@
               <MiscControls></MiscControls>
               <Define>N32L40X USE_STDPERIPH_DRIVER ADV2</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\core;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\device;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\n32l40x_std_periph_driver\inc;..\..\Source\App;..\..\Source\Drive;..\..\Source\DVC1124;..\..\Source\User</IncludePath>
+              <IncludePath>..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\core;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\device;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\n32l40x_std_periph_driver\inc;..\..\Source\App;..\..\Source\Drive;..\..\Source\DVC1124;..\..\Source\User;..\..\Source\VESC</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -574,6 +574,16 @@
               <FileName>wwdg.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Source\Drive\wwdg.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>VESC</GroupName>
+          <Files>
+            <File>
+              <FileName>buffer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Source\VESC\buffer.c</FilePath>
             </File>
           </Files>
         </Group>
