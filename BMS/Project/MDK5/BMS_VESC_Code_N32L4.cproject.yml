@@ -118,6 +118,7 @@ project:
     - group: VESC
       files:
         - file: ../../Source/VESC/buffer.c
+        - file: ../../Source/VESC/crc.c
     - group: Library
       files:
         - file: ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/src/misc.c

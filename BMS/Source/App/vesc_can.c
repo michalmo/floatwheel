@@ -1,5 +1,6 @@
 #include "vesc_can.h"
 #include "datatypes.h"
+#include "n32l40x_can.h"
 
 CAN_BMS_V_TOT 	BMS_V_TOT = 
 {
@@ -136,6 +137,77 @@ void VESC_COMM_CAN_Transmit(uint8_t can_id,CAN_PACKET_ID can_packet_id,uint8_t *
 	if(can_tx_queue_size > can_tx_queue_size_max)
 	{
 		can_tx_queue_size_max = can_tx_queue_size;
+	}
+}
+
+void VESC_COMM_CAN_Transmit_Buffer(uint8_t can_id,uint8_t *pdata,unsigned int len,uint8_t send)
+{
+	int ind;
+	unsigned int i;
+	unsigned int end_i = 0;
+	uint16_t crc;
+
+	if(len<=6)
+	{
+		can_tx_buffer[0] = CAN_ID;
+		can_tx_buffer[1] = send;
+		ind = 2;
+		memcpy(can_tx_buffer+ind,pdata,len);
+		ind += len;
+
+		VESC_COMM_CAN_Transmit(can_id,CAN_PACKET_PROCESS_SHORT_BUFFER,can_tx_buffer,ind);
+	}
+	else
+	{
+		for (i=0;i<len;i+=7)
+		{
+			if (i > 255)
+			{
+				break;
+			}
+			end_i = i+7;
+
+			can_tx_buffer[0] = i;
+			if ((i+7) <= len)
+			{
+				memcpy(can_tx_buffer+1,pdata+i,7);
+				ind = 8;
+			}
+			else
+			{
+				memcpy(can_tx_buffer+1,pdata+i,len-i);
+				ind = len-i+1;
+			}
+
+			VESC_COMM_CAN_Transmit(can_id,CAN_PACKET_FILL_RX_BUFFER,can_tx_buffer,ind);
+		}
+
+		for (i = end_i;i<len;i += 6)
+		{
+			ind = 0;
+			buffer_append_uint16(can_tx_buffer, i, &ind);
+			if ((i+6) <= len)
+			{
+				memcpy(can_tx_buffer+ind,pdata+i,6);
+				ind = 8;
+			}
+			else
+			{
+				memcpy(can_tx_buffer+ind,pdata+i,len-i);
+				ind += len-i;
+			}
+
+			VESC_COMM_CAN_Transmit(can_id,CAN_PACKET_FILL_RX_BUFFER_LONG,can_tx_buffer,ind);
+		}
+
+		ind = 0;
+		can_tx_buffer[ind++] = CAN_ID;
+		can_tx_buffer[ind++] = send;
+		buffer_append_uint16(can_tx_buffer, len, &ind);
+		crc = crc16(pdata, len);
+		buffer_append_uint16(can_tx_buffer, crc, &ind);
+
+		VESC_COMM_CAN_Transmit(can_id,CAN_PACKET_PROCESS_RX_BUFFER,can_tx_buffer,6);
 	}
 }
 
@@ -387,18 +459,96 @@ VESC_CAN_RX_TYPE VESC_CAN_RX_DATA =
 	.pSTATUS_5 = &STATUS_5,
 };
 
+uint8_t rx_buffer[RX_BUFFER_SIZE];
+
 void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct,VESC_CAN_RX_TYPE *vesc_can_rx_data)
 {
 	uint8_t id = can_rx_struct->ExtId & 0xFF;
 	uint32_t vesc_can_cmd = can_rx_struct->ExtId>>8;
+	uint8_t len = can_rx_struct->DLC;
 	uint8_t  *pdata =  can_rx_struct->Data;
 	
 	int ind = 0;
+	uint16_t rx_buffer_len;
+	uint16_t rx_buffer_ind;
+	uint16_t crc;
+	static uint8_t received_id = 0;
+	uint8_t commands_send;
 
 	if(id == 255 || id == CAN_ID)
 	{
 		switch(vesc_can_cmd)
 		{
+			case CAN_PACKET_FILL_RX_BUFFER:
+				memcpy(rx_buffer+pdata[0],pdata+1,len-1);
+			break;
+
+			case CAN_PACKET_FILL_RX_BUFFER_LONG:
+				rx_buffer_ind = buffer_get_uint16(pdata, &ind);
+				if(rx_buffer_ind < RX_BUFFER_SIZE)
+				{
+					memcpy(rx_buffer+rx_buffer_ind,pdata+ind,len-2);
+				}
+			break;
+
+			case CAN_PACKET_PROCESS_RX_BUFFER:
+				received_id = pdata[ind++];
+				commands_send = pdata[ind++];
+
+				rx_buffer_len = buffer_get_uint16(pdata, &ind);
+				if(rx_buffer_len > RX_BUFFER_SIZE)
+				{
+					break;
+				}
+
+				crc = buffer_get_uint16(pdata, &ind);
+				if(crc16(rx_buffer,rx_buffer_len) == crc)
+				{
+					switch(commands_send)
+					{
+						case 0:
+							VESC_Process_Command(rx_buffer,rx_buffer_len,received_id);
+						break;
+
+						case 1:
+							VESC_COMM_CAN_Transmit_Buffer(received_id,rx_buffer,rx_buffer_len,1);
+						break;
+
+						case 2:
+							received_id = 0;
+							VESC_Process_Command(rx_buffer,rx_buffer_len,0);
+						break;
+
+						default:
+						break;
+					}
+				}
+			break;
+
+			case CAN_PACKET_PROCESS_SHORT_BUFFER:
+				received_id = pdata[ind++];
+				commands_send = pdata[ind++];
+
+				switch(commands_send)
+				{
+					case 0:
+						VESC_Process_Command(pdata+ind,len-ind,received_id);
+					break;
+
+					case 1:
+						VESC_COMM_CAN_Transmit_Buffer(received_id,pdata+ind,len-ind,1);
+					break;
+
+					case 2:
+						received_id = 0;
+						VESC_Process_Command(pdata+ind,len-ind,0);
+					break;
+
+					default:
+					break;
+				}
+			break;
+
 			case CAN_PACKET_PING:
 				VESC_Send_Pong(pdata[0]);
 			break;
@@ -452,5 +602,71 @@ void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct,VESC_CAN_RX_TYPE *vesc_can_rx_
 
 		break;
 
+	}
+}
+
+void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
+{
+	int32_t ind = 0;
+	uint8_t buffer[50];
+
+	if(!len)
+	{
+		return;
+	}
+
+	COMM_PACKET_ID packet_id = pdata[0];
+	pdata++;
+	len--;
+
+	switch(packet_id)
+	{
+		case COMM_FW_VERSION:
+			buffer[ind++] = COMM_FW_VERSION;
+			buffer[ind++] = VESC_FW_VERSION_MAJOR;
+			buffer[ind++] = VESC_FW_VERSION_MINOR;
+			strncpy((char*)(buffer+ind),HW_NAME,strlen(HW_NAME));
+			ind += strlen(HW_NAME);
+			buffer[ind++] = '\0';
+			memcpy(buffer+ind,(uint8_t*)(UID_BASE),UID_LENGTH);
+			ind += UID_LENGTH;
+			buffer[ind++] = 0; // Is paired?
+			buffer[ind++] = VESC_FW_TEST_VERSION_NUMBER;
+			buffer[ind++] = HW_TYPE_VESC_BMS;
+			buffer[ind++] = 0; // Custom configs
+			if (reply_to != 0)
+			{
+				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+			}
+		break;
+
+		case COMM_REBOOT:
+			if(Flag.Power != 0 &&
+				 Flag.Charger_ON == 0 &&
+				 (VESC_CAN_RX_DATA.pSTATUS->Rpm < 100 &&
+				   VESC_CAN_RX_DATA.pSTATUS->Rpm > -100))
+			{
+				Flag.Software_Reset = 1;
+				Flag.Power = 3;
+			}
+		break;
+
+		case COMM_SHUTDOWN:
+			if(Flag.Power != 0 &&
+				 Flag.Charger_ON == 0 &&
+				 (pdata[0] == 1 || // force
+				  (VESC_CAN_RX_DATA.pSTATUS->Rpm < 100 &&
+				   VESC_CAN_RX_DATA.pSTATUS->Rpm > -100)))
+			{
+				if(pdata[1] == 1) // restart
+				{
+					Flag.Software_Reset = 1;
+				}
+				Flag.Power = 3;
+			}
+		break;
+
+		default:
+		break;
 	}
 }
