@@ -19,8 +19,8 @@ void VESC_CAN_Status_Task(void)
 	if(
 		// wait if there's a transmit backlog
 		can_tx_queue_size > 0 ||
-		// apply a rate limit
-		Software_Counter_1ms.VESC_CAN < 200)
+		// respect the configured status rate
+		Software_Counter_1ms.VESC_CAN * storage.config.can_status_rate_hz < 1000)
 	{
 		return;
 	}
@@ -30,7 +30,7 @@ void VESC_CAN_Status_Task(void)
 	VESC_Set_BMS_V_TOT(&VESC_CAN_DATA);
 	VESC_Set_BMS_I(&VESC_CAN_DATA);
 	VESC_Set_BMS_AH_WH(&VESC_CAN_DATA);
-	for(i=0;i<MAX_CELL_SERIES;i+=3)
+	for(i=0;i<storage.config.cell_num;i+=3)
 	{
 		VESC_Set_BMS_V_CELL(&VESC_CAN_DATA, i);
 	}

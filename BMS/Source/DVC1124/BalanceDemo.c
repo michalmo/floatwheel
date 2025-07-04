@@ -7,6 +7,8 @@
 **************************************************************************************/
 #include "CellBalance.h"
 #include "DVC1124_app.h"
+#include "datatypes.h"
+#include <math.h>
 
 u8 bOTC;//过温标志位
 int uiCellVmin,uiCellVmax;
@@ -42,14 +44,14 @@ void CalcuVolMaxMin(void){
 	u8 i;
 	int cellVoltage;
 
-	for(i=0;i<AFE_MAX_CELL_CNT;i++)
+	for(i=0;i<storage.config.cell_num;i++)
 	{
 		uiCellvotage[i]=DVC11XX_Calc_VCell(i);//各串电压实际值还原
 	}
 
 	uiCellVmin = uiCellVmax = uiCellvotage[0];//初始化
 
-	for(cellIndex=AFE_MAX_CELL_CNT-1;cellIndex>=0;cellIndex--)
+	for(cellIndex=storage.config.cell_num-1;cellIndex>=0;cellIndex--)
 	{
 		cellVoltage=uiCellvotage[cellIndex];
 		if( cellVoltage>uiCellVmax)
@@ -75,24 +77,51 @@ void CalcuVolMaxMin(void){
 */
 void BalanceProcess(void)
 {
+	static u32 shouldBals = 0;
 	u8 i;
+	uint16_t balance_min = storage.config.vc_balance_min * 1000;  // mV
+	uint16_t balance_start = storage.config.vc_balance_start * 1000;  // mV
+	uint16_t balance_end = storage.config.vc_balance_end * 1000;  // mV
+	uint16_t balance_high_threshold = storage.config.vc_balance_high_threshold * 1000;  // mV
+	uint16_t limit;
 	
 	newBals = 0;
 	
 	uiBalMaskFlags=(g_AfeRegs.R103_R105.CB[0]<<16)+(g_AfeRegs.R103_R105.CB[1]<<8)+g_AfeRegs.R103_R105.CB[2];//刷新当前均衡位
 	
-	for(i=0;i<AFE_MAX_CELL_CNT;i++)
+	for(i=0;i<storage.config.cell_num;i++)
 	{
+		limit = shouldBals & (1<<i) ? balance_end : balance_start;
 		if(
-		   // only balance above the minimum threshold
-		   DVC_1124.Single_Voltage[i] > BALANCE_VOLTAGE_MIN &&
-		   // ... only down to the lowest cell
-		   DVC_1124.Single_Voltage[i] > DVC_1124.Single_Voltage_Min &&
-		   // ... and only drain the highest cells
-		   DVC_1124.Single_Voltage_Max - DVC_1124.Single_Voltage[i] <= BALANCE_VOLTAGE_MAX_DELTA)
+			// only balance above the minimum threshold
+			DVC_1124.Single_Voltage[i] > balance_min &&
+			// ... only down to within vc_balance_start to vc_balance_end of the lowest cell
+			DVC_1124.Single_Voltage[i] > DVC_1124.Single_Voltage_Min + limit
+		)
 		{
-			newBals |= (1<<i);	//计算出电芯最大电压需要开启均衡的各个位
+			shouldBals |= (1<<i);
+			if (
+				// ... and only drain the highest cells
+				DVC_1124.Single_Voltage_Max - DVC_1124.Single_Voltage[i] <= balance_high_threshold
+			)
+			{
+				newBals |= (1<<i);	//计算出电芯最大电压需要开启均衡的各个位
+			}
 		}
+	}
+	if(!newBals)
+	{
+		// balancing ended - reset flags
+		shouldBals = 0;
+	}
+	if(
+		// ... respect the balance mode setting
+		storage.config.balance_mode == BALANCE_MODE_DISABLED ||
+		(storage.config.balance_mode == BALANCE_MODE_CHARGING_ONLY && !VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charging) ||
+		// ... respect the current limit setting
+		fabsf(DVC_1124.Current_CC2) > storage.config.balance_max_current)
+	{
+		newBals = 0;
 	}
 	if(newBals != uiBalMaskFlags)
 	{
@@ -101,7 +130,7 @@ void BalanceProcess(void)
 		VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Balancing = newBals ? 1 : 0;
 	}
 	
-//	for(i=0;i<AFE_MAX_CELL_CNT;i++)
+//	for(i=0;i<storage.config.cell_num;i++)
 //	{
 //		if(uiCellvotage[i] > uiBalanceVol_max)
 //		{
@@ -113,7 +142,7 @@ void BalanceProcess(void)
 //	{//未过温、最低电压高于均衡开启最小电压、压差高于均衡开启阈值
 //		
 //		int cellVoltage=0;
-//		for(i=0;i<AFE_MAX_CELL_CNT;i++)
+//		for(i=0;i<storage.config.cell_num;i++)
 //		{
 //			cellVoltage=uiCellvotage[i];
 //			if( (cellVoltage-uiCellVmin)>=uiBalanceVolDiff)

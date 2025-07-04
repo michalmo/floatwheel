@@ -15,8 +15,8 @@
 typedef struct
 {
 	float 		Voltage;	//电池电压
-	uint16_t	Single_Voltage[20];
-	uint16_t	Single_Voltage_Last[20];
+	uint16_t	Single_Voltage[AFE_MAX_CELL_CNT];
+	uint16_t	Single_Voltage_Last[AFE_MAX_CELL_CNT];
 	uint16_t	Single_Voltage_Min;
 	uint16_t	Single_Voltage_Max;
 	float 		IC_Temp;	//芯片温度
@@ -31,6 +31,5 @@ extern DVC1124_Type	DVC_1124;
 
 void DVC1124_Task(void);
 float GetPowerLevel(float battery_voltage);
-	
-#endif
 
+#endif

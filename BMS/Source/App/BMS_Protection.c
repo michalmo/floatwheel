@@ -19,11 +19,13 @@ void BMS_Overvoltage_Protection(void)
 {
 	uint8_t clean_flag = 0xFF,r0;
 	uint8_t i = 0,val1 = 0;
+	uint16_t charge_end = storage.config.vc_charge_end * 1000;  // mV
+	uint16_t overvoltage_delay = storage.config.overvoltage_delay * 1000;  // ms
 	static uint8_t lock = 0;
 	
 	if(lock == 0)
 	{
-		if(DVC_1124.Single_Voltage_Max > CELL_VOLTAGE_MAX)
+		if(DVC_1124.Single_Voltage_Max > charge_end)
 		{
 			val1 = 1;
 		}
@@ -43,7 +45,7 @@ void BMS_Overvoltage_Protection(void)
 		Software_Counter_1ms.Overvoltage_Protection_Delay = 60000;
 	}	
 	//if(g_AfeRegs.R0.bitmap.COV)		//发生电池过压
-	if((val1 != 0) && (Software_Counter_1ms.Overvoltage_Protection_Delay > 1000))	//发生过压并保持1S
+	if((val1 != 0) && (Software_Counter_1ms.Overvoltage_Protection_Delay > overvoltage_delay))	//发生过压并保持1S
 	{
 		lock = 1;
 		CHARG_OFF;					//关闭充电器
@@ -52,7 +54,7 @@ void BMS_Overvoltage_Protection(void)
 		Flag.Overvoltage = 1;
 		
 		if(newBals == 0 &&	//过压保护解除
-		   DVC_1124.Single_Voltage_Max < CELL_VOLTAGE_MAX)
+		   DVC_1124.Single_Voltage_Max < charge_end)
 		{
 			lock = 0;
 			Flag.Overvoltage = 0;
@@ -92,9 +94,13 @@ void BMS_Undervoltage_Protection(void)
 {
 	uint8_t clean_flag = 0xFF,r0;
 	uint8_t i = 0,val1 = 0,val2 = 0,val3 = 0;
+	uint16_t charge_min = storage.config.vc_charge_min * 1000;  // mV
+	uint16_t charge_start = storage.config.vc_charge_start * 1000;  // mV
+	uint16_t discharge_min = storage.config.vc_discharge_min * 1000;  // mV
+	uint16_t undervoltage_delay = storage.config.undervoltage_delay * 1000; // ms
 	static uint8_t lock = 0;
 	
-	if(DVC_1124.Single_Voltage_Min < CELL_VOLTAGE_CRITICAL)
+	if(DVC_1124.Single_Voltage_Min < charge_min)
 	{
 		val3 = 1;
 	}
@@ -116,7 +122,7 @@ void BMS_Undervoltage_Protection(void)
 		
 	if(lock == 0)
 	{
-		if(DVC_1124.Single_Voltage_Min < CELL_VOLTAGE_WARNING)
+		if(DVC_1124.Single_Voltage_Min < discharge_min)
 		{
 			val1 = 1;
 		}
@@ -153,7 +159,7 @@ void BMS_Undervoltage_Protection(void)
 			Flag.Power = 3;
 		}
 		
-		if(DVC_1124.Single_Voltage_Min <= CELL_VOLTAGE_MIN)
+		if(DVC_1124.Single_Voltage_Min <= charge_start)
 		{
 			val2 = 1;
 		}
@@ -189,15 +195,17 @@ void BMS_Discharge_Overcurrent_Protection(void)
 {
 	uint8_t clean_flag = 0xFF,r0;
 	uint8_t i = 0;
+	float max_discharge_current = storage.config.max_discharge_current;  // A
+	uint16_t discharge_overcurrent_delay = storage.config.discharge_overcurrent_delay * 1000;  // ms
 	
 	//if(g_AfeRegs.R0.bitmap.OCD2)	//发生2级放电过流
 	
-	if(DVC_1124.Current_CC2 > DISCHARGE_CURRENT_MAX)	//110A过流
+	if(DVC_1124.Current_CC2 > max_discharge_current)	//110A过流
 	{
 		Flag.Electric_Discharge_Overcurrent = 1;
 		VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[5] = 9900;	//错误代码
 		
-		if(Software_Counter_1ms.Discharge_Overcurrent_Delay >= 1000)	//放电过流持续1S，关机
+		if(Software_Counter_1ms.Discharge_Overcurrent_Delay >= discharge_overcurrent_delay)	//放电过流持续1S，关机
 		{
 			DSG_OFF;// Cut power after 1s+ of more than 110A
 			CHG_OFF;
@@ -236,11 +244,14 @@ void BMS_Charge_Overcurrent_Protection(void)
 {
 	uint8_t clean_flag = 0xFF,r0;
 	uint8_t i = 0;
+	float min_charge_current = -storage.config.min_charge_current;  // A
+	float max_charge_current = -storage.config.max_charge_current;  // A
+	uint16_t charge_overcurrent_delay = storage.config.charge_overcurrent_reset_delay * 1000;  // ms
 	static uint8_t lock = 0;
 	
 	//if(g_AfeRegs.R0.bitmap.OCC2)	//发生2级充电过流
 	
-	if(DVC_1124.Current_CC2 < CHARGE_CURRENT_MAX)	//20A过流
+	if(DVC_1124.Current_CC2 < max_charge_current)	//20A过流
 	{
 		Flag.Charging_Overcurrent = 1;
 		CHARG_OFF;					//关闭充电器
@@ -249,11 +260,11 @@ void BMS_Charge_Overcurrent_Protection(void)
 		lock = 1;
 		Software_Counter_1ms.Charge_Overcurrent_Delay = 0;
 	}
-	else if(DVC_1124.Current_CC2 > CHARGE_CURRENT_THRESHOLD) //1A
+	else if(DVC_1124.Current_CC2 > min_charge_current) //1A
 	{
 		if(lock == 1)
 		{
-			if(Software_Counter_1ms.Charge_Overcurrent_Delay > 10000)
+			if(Software_Counter_1ms.Charge_Overcurrent_Delay > charge_overcurrent_delay)
 			{
 				lock = 0;
 				VESC_CAN_DATA.pBMS_TEMPS->BMS_Single_Temp[6] = 0;	//错误代码
@@ -312,17 +323,22 @@ void BMS_Short_Circuit_Protection(void)
  **************************************************/
 void BMS_Overtemperature_Protection(void)
 {
+	float charge_max = storage.config.t_charge_max;  // °C
+	float charge_high_threshold = storage.config.t_charge_high_threshold;  // °C
+	float bms_charge_max = storage.config.t_bms_charge_max;  // °C
+	float bms_charge_high_threshold = storage.config.t_bms_charge_high_threshold;  // °C
+	uint16_t overtemperature_delay = storage.config.overtemperature_delay * 1000;  // ms
 	static uint8_t lock = 0;
 	
 	if(lock == 0)	//没发生过温
 	{
-		if( (DVC_1124.IC_Temp > IC_TEMPERATURE_MAX) ||
-			(DVC_1124.GP3_Temp > IC_TEMPERATURE_MAX) ||
-			(DVC_1124.GP1_Temp > BATTERY_TEMPERATURE_MAX) ||
-			(DVC_1124.GP4_Temp > BATTERY_TEMPERATURE_MAX)
+		if( (DVC_1124.IC_Temp > bms_charge_max) ||
+			(DVC_1124.GP3_Temp > bms_charge_max) ||
+			(DVC_1124.GP1_Temp > charge_max) ||
+			(DVC_1124.GP4_Temp > charge_max)
 			) 
 		{
-			if(Software_Counter_1ms.Overtemperature_Protection_Delay >= 1000)	//过温延时1S
+			if(Software_Counter_1ms.Overtemperature_Protection_Delay >= overtemperature_delay)	//过温延时1S
 			{
 				Flag.Overtemperature = 1;
 				CHARG_OFF;					//关闭充电器
@@ -338,10 +354,10 @@ void BMS_Overtemperature_Protection(void)
 	}
 	else	//已经发生过温
 	{
-		if( (DVC_1124.IC_Temp < IC_TEMPERATURE_HIGH_THRESHOLD) &&
-			(DVC_1124.GP3_Temp < IC_TEMPERATURE_HIGH_THRESHOLD) &&
-			(DVC_1124.GP1_Temp < BATTERY_TEMPERATURE_HIGH_THRESHOLD) &&
-			(DVC_1124.GP4_Temp < BATTERY_TEMPERATURE_HIGH_THRESHOLD )
+		if( (DVC_1124.IC_Temp < bms_charge_high_threshold) &&
+			(DVC_1124.GP3_Temp < bms_charge_high_threshold) &&
+			(DVC_1124.GP1_Temp < charge_high_threshold) &&
+			(DVC_1124.GP4_Temp < charge_high_threshold )
 			) 
 		{
 			Software_Counter_1ms.Overtemperature_Protection_Delay = 0;
@@ -372,14 +388,18 @@ void BMS_Overtemperature_Protection(void)
  **************************************************/
 void BMS_Low_Temperature_Protection(void)
 {
+	float abs_min = storage.config.t_min;  // °C
+	float abs_low_threshold = storage.config.t_low_threshold;  // °C
+	float charge_min = storage.config.t_charge_min;  // °C
+	float charge_low_threshold = storage.config.t_charge_low_threshold;  // °C
 	static uint8_t lock = 0;
 	
 	if(lock == 0)	//没发生低温
 	{
 		if(CHARGER == 1)
 		{
-			if( (DVC_1124.GP1_Temp < BATTERY_TEMPERATURE_MIN_CHARGE) ||
-				(DVC_1124.GP4_Temp < BATTERY_TEMPERATURE_MIN_CHARGE)
+			if( (DVC_1124.GP1_Temp < charge_min) ||
+				(DVC_1124.GP4_Temp < charge_min)
 				)
 			{
 				Flag.Lowtemperature = 1;
@@ -391,8 +411,8 @@ void BMS_Low_Temperature_Protection(void)
 		}
 		else
 		{
-			if( (DVC_1124.GP1_Temp < BATTERY_TEMPERATURE_MIN) ||
-				(DVC_1124.GP4_Temp < BATTERY_TEMPERATURE_MIN)
+			if( (DVC_1124.GP1_Temp < abs_min) ||
+				(DVC_1124.GP4_Temp < abs_min)
 				)
 			{
 				Flag.Lowtemperature = 1;
@@ -406,8 +426,8 @@ void BMS_Low_Temperature_Protection(void)
 	{
 		if(CHARGER == 1)
 		{
-			if( (DVC_1124.GP1_Temp > BATTERY_TEMPERATURE_LOW_THRESHOLD_CHARGE) ||
-				(DVC_1124.GP4_Temp > BATTERY_TEMPERATURE_LOW_THRESHOLD_CHARGE)
+			if( (DVC_1124.GP1_Temp > charge_low_threshold) ||
+				(DVC_1124.GP4_Temp > charge_low_threshold)
 				)
 			{
 				if(
@@ -428,8 +448,8 @@ void BMS_Low_Temperature_Protection(void)
 		}
 		else
 		{
-			if( (DVC_1124.GP1_Temp > BATTERY_TEMPERATURE_LOW_THRESHOLD) ||
-				(DVC_1124.GP4_Temp > BATTERY_TEMPERATURE_LOW_THRESHOLD)
+			if( (DVC_1124.GP1_Temp > abs_low_threshold) ||
+				(DVC_1124.GP4_Temp > abs_low_threshold)
 				)
 			{
 				//没有动作

@@ -1,4 +1,6 @@
 #include "DVC1124_init.h"
+#include "conf_general.h"
+#include <stdint.h>
 
 /*
 
@@ -41,12 +43,12 @@ DVC1124_Config_Type DVC1124_Config = {
 	.OCC2D_0x61 = 24,	//100ms
 	
 	//放电短路保护阈值寄存器,阈值电压=SCDT×10mV
-	.SCDT_0x62 = 12,	//120A
+	.SCDT_0x62 = 12,	//120A use storage.config.short_circuit_detection_voltage - 1 instead
 	//保留
 	.RES_0x62 = 0,
 	
 	//放电短路保护延迟寄存器,延迟时间=SCDD×7.81μs
-	.SCDD_0x63 = 255,		//2ms
+	.SCDD_0x63 = 255,		//2ms use storage.config.short_circuit_detection_time instead
 	
 	//电池过压保护寄存器
 	//阈值电压=COVT×1mV+500mV
@@ -176,11 +178,16 @@ void DVC1124_Write_Init(void)
 	g_AfeRegs.R98.R98_RVD = 0;		//保留位
 	g_AfeRegs.R98.SCDE = 1;			//放电短路保护使能控制位	开启
 	//g_AfeRegs.R98.SCDT = 16;		//放电短路保护阈值控制位，阈值电压=SCDT×10mV
-	g_AfeRegs.R98.SCDT = DVC1124_Config.SCDT_0x62;		//放电短路保护阈值控制位，阈值电压=SCDT×10mV
+	// g_AfeRegs.R98.SCDT = DVC1124_Config.SCDT_0x62;		//放电短路保护阈值控制位，阈值电压=SCDT×10mV
+	// storage.config.short_circuit_detection_voltage accepts values from 1 to 64
+	// g_AfeRegs.R98.SCDT accepts values 0 to 63
+	g_AfeRegs.R98.SCDT = ((uint8_t)storage.config.short_circuit_detection_voltage) - 1;		//放电短路保护阈值控制位，阈值电压=SCDT×10mV
 	
 	//0x63	放电短路保护延迟寄存器
 	//g_AfeRegs.R99.SCDD = 0x10;		//放电短路保护延迟控制位，延迟时间=SCDD×7.81μs
-	g_AfeRegs.R99.SCDD = DVC1124_Config.SCDD_0x63;		//放电短路保护延迟控制位，延迟时间=SCDD×7.81μs
+	// g_AfeRegs.R99.SCDD = DVC1124_Config.SCDD_0x63;		//放电短路保护延迟控制位，延迟时间=SCDD×7.81μs
+	// storage.config.short_circuit_detection_time and g_AfeRegs.R99.SCDD accept values from 0 to 255
+	g_AfeRegs.R99.SCDD = (uint8_t)storage.config.short_circuit_detection_time;		//放电短路保护延迟控制位，延迟时间=SCDD×7.81μs
 	
 	//0x64
 	g_AfeRegs.R100 = 0x88;			//保留

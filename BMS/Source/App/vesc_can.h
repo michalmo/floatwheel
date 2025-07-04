@@ -5,6 +5,7 @@
 
 #include "n32l40x.h"
 #include "conf_general.h"
+#include "can.h"
 #include "CellBalance.h"
 #include "charger.h"
 #include "crc.h"
@@ -14,7 +15,6 @@
 #define CAN_RX_QUEUE_SIZE 20
 #define RX_BUFFER_SIZE 520
 
-#define MAX_CELL_SERIES 20
 #define MAX_TEMP_SENSORS 9
 
 typedef struct
@@ -103,7 +103,7 @@ typedef struct
 
 typedef struct
 {
-	uint16_t		BMS_Single_Voltage[MAX_CELL_SERIES];	//单节电池电压	扩大1000倍发送
+	uint16_t		BMS_Single_Voltage[AFE_MAX_CELL_CNT];	//单节电池电压	扩大1000倍发送
 }CAN_BMS_V_CELL;
 
 typedef struct

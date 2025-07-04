@@ -1,9 +1,9 @@
 #include "DVC1124_app.h"
+#include "DVC1124.h"
 
 DVC1124_Type	DVC_1124;
 
 #define CurrentSenseResistance_mR      1            //电流采样电阻值（单位mR)
-#define	K	 0.5f
 /**************************************************
  * @brie  :DVC1124_Voltage()
  * @note  :DVC1124计算电压
@@ -14,15 +14,42 @@ void DVC1124_Voltage(void)
 {
 	float current = 0;
 	uint8_t i = 0;
+	float K = storage.config.cell_voltage_k;
+	float sag_comp_table[AFE_MAX_CELL_CNT];
 	static uint8_t first = 0;
-		
+
+	sag_comp_table[0] = storage.config.cell_voltage_sag_comp_0;
+	sag_comp_table[1] = storage.config.cell_voltage_sag_comp_1;
+	sag_comp_table[2] = storage.config.cell_voltage_sag_comp_2;
+	sag_comp_table[3] = storage.config.cell_voltage_sag_comp_3;
+	sag_comp_table[4] = storage.config.cell_voltage_sag_comp_4;
+	sag_comp_table[5] = storage.config.cell_voltage_sag_comp_5;
+	sag_comp_table[6] = storage.config.cell_voltage_sag_comp_6;
+	sag_comp_table[7] = storage.config.cell_voltage_sag_comp_7;
+	sag_comp_table[8] = storage.config.cell_voltage_sag_comp_8;
+	sag_comp_table[9] = storage.config.cell_voltage_sag_comp_9;
+	sag_comp_table[10] = storage.config.cell_voltage_sag_comp_10;
+	sag_comp_table[11] = storage.config.cell_voltage_sag_comp_11;
+	sag_comp_table[12] = storage.config.cell_voltage_sag_comp_12;
+	sag_comp_table[13] = storage.config.cell_voltage_sag_comp_13;
+	sag_comp_table[14] = storage.config.cell_voltage_sag_comp_14;
+	sag_comp_table[15] = storage.config.cell_voltage_sag_comp_15;
+	sag_comp_table[16] = storage.config.cell_voltage_sag_comp_16;
+	sag_comp_table[17] = storage.config.cell_voltage_sag_comp_17;
+	sag_comp_table[18] = storage.config.cell_voltage_sag_comp_18;
+	sag_comp_table[19] = storage.config.cell_voltage_sag_comp_19;
+	sag_comp_table[20] = storage.config.cell_voltage_sag_comp_20;
+	sag_comp_table[21] = storage.config.cell_voltage_sag_comp_21;
+	sag_comp_table[22] = storage.config.cell_voltage_sag_comp_22;
+	sag_comp_table[23] = storage.config.cell_voltage_sag_comp_23;
+
 	//计算总电压
 	DVC_1124.Voltage = (float)(DVC11XX_Calc_VBAT()/1000.0f);
 	//VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f = DVC_1124.Voltage;
 	
 	VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f = 0;
 	//计算单节电池电压
-	for(i = 0; i < 20; i++)
+	for(i = 0; i < storage.config.cell_num; i++)
 	{
 		DVC_1124.Single_Voltage[i] = (uint16_t)DVC11XX_Calc_VCell(i);
 	}
@@ -32,20 +59,9 @@ void DVC1124_Voltage(void)
 	DVC_1124.Single_Voltage_Min = 0xffff;
 	DVC_1124.Single_Voltage_Max = 0;
 
-	for(i = 0; i < AFE_MAX_CELL_CNT; i++)	//电芯电压软件补偿
+	for(i = 0; i < storage.config.cell_num; i++)	//电芯电压软件补偿
 	{
-		if(i == 0)	//第1节电池
-		{
-			DVC_1124.Single_Voltage[i] = (DVC_1124.Single_Voltage[i] + ((int16_t)(current * 12.51f)));
-		}
-		else if(i == 17)	//第18节电池
-		{
-			DVC_1124.Single_Voltage[i] = (DVC_1124.Single_Voltage[i] + ((int16_t)(current * 13.23f)));
-		}
-		else
-		{
-			DVC_1124.Single_Voltage[i] = (DVC_1124.Single_Voltage[i] + ((int16_t)(current * 6.813f)));
-		}
+		DVC_1124.Single_Voltage[i] = (DVC_1124.Single_Voltage[i] + ((int16_t)(current * sag_comp_table[i])));
 
 		if(first == 0)	//刚刚开机第一次检测，上一次电芯电压等于本次电芯电压
 		{
@@ -153,32 +169,30 @@ void DVC1124_Task(void)
 
 float GetPowerLevel(float battery_voltage)
 {
-	#ifdef S50S
-	uint16_t battVoltages_mv[11] = {4200, 4075, 4040, 3900, 3820, 3735, 3640, 3520, 3375, 3160, 3000}; //50S
-	#endif
+	float cell_voltages[11] = {
+		storage.config.vc_soc_curve_100,
+		storage.config.vc_soc_curve_90,
+		storage.config.vc_soc_curve_80,
+		storage.config.vc_soc_curve_70,
+		storage.config.vc_soc_curve_60,
+		storage.config.vc_soc_curve_50,
+		storage.config.vc_soc_curve_40,
+		storage.config.vc_soc_curve_30,
+		storage.config.vc_soc_curve_20,
+		storage.config.vc_soc_curve_10,
+		storage.config.vc_soc_curve_0
+	};
 
-	#ifdef P42A
-	uint16_t battVoltages_mv[11] = {4200, 4065, 3938, 3854, 3776, 3695, 3618, 3543, 3460, 3342, 3000}; //P42A
-	#endif
+  float battery_cell_voltage = battery_voltage / storage.config.cell_num;
 
-	#ifdef DG40
-	uint16_t battVoltages_mv[11] = {4200, 4047, 3944, 3867, 3799, 3717, 3600, 3498, 3381, 3237, 3000}; //DG40
-	#endif
-
-	#ifdef VTC6
-	uint16_t battVoltages_mv[11] = {4200, 4064, 4015, 3895, 3821, 3745, 3655, 3559, 3459, 3292, 3000}; // Sony VTC6
-	#endif
-
-  uint16_t battery_voltage_mv = battery_voltage * 1000 / MAX_CELL_SERIES;
-
-	if (battery_voltage_mv >= battVoltages_mv[0]) {
+	if (battery_cell_voltage >= cell_voltages[0]) {
 		return 1.0;
-	} else if (battery_voltage_mv <= battVoltages_mv[10]) {
+	} else if (battery_cell_voltage <= cell_voltages[10]) {
 		return 0.0;
 	} else {
 		for (int i = 1; i <= 10; i++) {
-			if (battery_voltage_mv >= battVoltages_mv[i]) {
-				return ((1.0 - i*0.1) + (0.1 * (battery_voltage_mv - battVoltages_mv[i])) / (battVoltages_mv[i - 1] - battVoltages_mv[i]));
+			if (battery_cell_voltage >= cell_voltages[i]) {
+				return (1.0 - i*0.1) + (0.1 * (battery_cell_voltage - cell_voltages[i])) / (cell_voltages[i - 1] - cell_voltages[i]);
 			}
 		}
 	}

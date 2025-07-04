@@ -5,10 +5,11 @@
 ;  *----------------------Abstract Description---------------------------------
 ;  *			          AFE电压计算处理                              		
 ******************************************************************************/
+#include "conf_general.h"
 #include "Voltage.h"
 /////////////////////////////////////////////////////////////////////////////
 
-static float s_SecondCALI_p1=0.35f/1000000,s_SecondCALI_p2=-0.12f/ 1000000,s_SecondCALI_preVcm=0,s_SecondCALI_preVcell_2nd=0;
+static float s_SecondCALI_preVcm=0,s_SecondCALI_preVcell_2nd=0;
 u32 Sigma_SecondCALI=0;
 
 /**
@@ -18,7 +19,8 @@ u32 Sigma_SecondCALI=0;
 	* @注	单位mV
 */
 static float CellVolSecondaryCalibrate(float value,int cellno){
-	
+	float s_SecondCALI_p1 = storage.config.cell_voltage_cali_p1;
+	float s_SecondCALI_p2 = storage.config.cell_voltage_cali_p2;
   if (cellno == 0) {
 		s_SecondCALI_preVcm = 0;
 		s_SecondCALI_preVcell_2nd = value;
@@ -43,7 +45,7 @@ float DVC11XX_Calc_VCell(u8 cellIndex){
 #else
 	u8 cellMask=cellIndex;
 #endif
-		if(cellIndex>AFE_MAX_CELL_CNT-1)
+		if(cellIndex>=storage.config.cell_num)
 			return ERROR;
 
 	uwValue=(g_AfeRegs.R29_76.VCELLS[cellMask].VCELL_H<<8)|g_AfeRegs.R29_76.VCELLS[cellMask].VCELL_L;

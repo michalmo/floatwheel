@@ -5,6 +5,7 @@
 #include "confxml.h"
 #include "flash.h"
 #include "n32l40x_can.h"
+#include "DVC1124_init.h"
 
 CAN_BMS_V_TOT 	BMS_V_TOT = 
 {
@@ -153,7 +154,7 @@ void VESC_COMM_CAN_Transmit_Buffer(uint8_t can_id,uint8_t *pdata,unsigned int le
 
 	if(len<=6)
 	{
-		can_tx_buffer[0] = CAN_ID;
+		can_tx_buffer[0] = storage.config.controller_id;
 		can_tx_buffer[1] = send;
 		ind = 2;
 		memcpy(can_tx_buffer+ind,pdata,len);
@@ -205,7 +206,7 @@ void VESC_COMM_CAN_Transmit_Buffer(uint8_t can_id,uint8_t *pdata,unsigned int le
 		}
 
 		ind = 0;
-		can_tx_buffer[ind++] = CAN_ID;
+		can_tx_buffer[ind++] = storage.config.controller_id;
 		can_tx_buffer[ind++] = send;
 		buffer_append_uint16(can_tx_buffer, len, &ind);
 		crc = crc16(pdata, len);
@@ -274,16 +275,16 @@ void VESC_Set_BMS_V_CELL(VESC_CAN_TYPE *vesc_can_data,uint8_t start_cell_id)
 	int ind = 0;
 
 	can_tx_buffer[ind++] = start_cell_id;
-	can_tx_buffer[ind++] = MAX_CELL_SERIES;
-	if(start_cell_id < MAX_CELL_SERIES)
+	can_tx_buffer[ind++] = storage.config.cell_num;
+	if(start_cell_id < storage.config.cell_num)
 	{
 		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[start_cell_id], &ind);
 	}
-	if(start_cell_id+1 < MAX_CELL_SERIES)
+	if(start_cell_id+1 < storage.config.cell_num)
 	{
 		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[start_cell_id+1], &ind);
 	}
-	if(start_cell_id+2 < MAX_CELL_SERIES)
+	if(start_cell_id+2 < storage.config.cell_num)
 	{
 		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[start_cell_id+2], &ind);
 	}
@@ -301,7 +302,7 @@ void VESC_Set_BMS_BAL(VESC_CAN_TYPE *vesc_can_data)
 {
 	int ind = 0;
 
-	can_tx_buffer[ind++] = MAX_CELL_SERIES;
+	can_tx_buffer[ind++] = storage.config.cell_num;
 	can_tx_buffer[ind++] = 0;
 	can_tx_buffer[ind++] = 0;
 	can_tx_buffer[ind++] = 0;
@@ -415,7 +416,7 @@ void VESC_Set_BMS_AH_WH_DIS_TOTAL(VESC_CAN_TYPE *vesc_can_data)
 
 void VESC_Send_Pong(uint8_t can_id)
 {
-	can_tx_buffer[0] = CAN_ID;
+	can_tx_buffer[0] = storage.config.controller_id;
 	can_tx_buffer[1] = HW_TYPE_VESC_BMS;
 
 	VESC_COMM_CAN_Transmit(can_id,CAN_PACKET_PONG,can_tx_buffer,2);
@@ -552,7 +553,7 @@ void VESC_CAN_Receive_Task(void)
 	static uint8_t received_id = 0;
 	uint8_t commands_send;
 
-	if(id == 255 || id == CAN_ID)
+	if(id == 255 || id == storage.config.controller_id)
 	{
 		switch(vesc_can_cmd)
 		{
@@ -695,6 +696,8 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 	int conf_ind;
 	int16_t value16;
 	int32_t value32;
+	bool baud_changed = false;
+	bool DVC1124_config_changed = false;
 
 	if(!len)
 	{
@@ -734,12 +737,12 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_I->Input_Current_BMS_IC.f, 1000000, &ind);
 			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_AH_WH->Ah_Counter.f, 1000, &ind);
 			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_AH_WH->Wh_Counter.f, 1000, &ind);
-			buffer[ind++] = MAX_CELL_SERIES;
-			for(i=0;i<MAX_CELL_SERIES;i++)
+			buffer[ind++] = storage.config.cell_num;
+			for(i=0;i<storage.config.cell_num;i++)
 			{
 				buffer_append_int16(buffer, VESC_CAN_DATA.pBMS_V_CELL->BMS_Single_Voltage[i], &ind);
 			}
-			for(i=0;i<MAX_CELL_SERIES;i++)
+			for(i=0;i<storage.config.cell_num;i++)
 			{
 				buffer[ind++] = (VESC_CAN_DATA.pBMS_BAL->BMS_BAT.i & (1 << i)) ? 1 : 0;
 			}
@@ -754,7 +757,7 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			buffer_append_float16(buffer, VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max, 100, &ind);
 			buffer_append_float16(buffer, VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soc, 1000, &ind);
 			buffer_append_float16(buffer, VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Soh, 1000, &ind);
-			buffer[ind++] = CAN_ID;
+			buffer[ind++] = storage.config.controller_id;
 			buffer_append_float32_auto(buffer, VESC_CAN_DATA.pBMS_AH_WH_CHG_TOTAL->Ah_Charge_Total.f, &ind);
 			buffer_append_float32_auto(buffer, VESC_CAN_DATA.pBMS_AH_WH_CHG_TOTAL->Wh_Charge_Total.f, &ind);
 			buffer_append_float32_auto(buffer, VESC_CAN_DATA.pBMS_AH_WH_DIS_TOTAL->Ah_Discharge_Total.f, &ind);
@@ -800,8 +803,25 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			if(conf_ind == 0 &&
 				 confparser_deserialize_main_config_t(pdata + 1, conf_ptr))
 			{
+				if(conf_ptr->can_baud_rate != storage.config.can_baud_rate)
+				{
+					baud_changed = true;
+				}
+				if(conf_ptr->short_circuit_detection_voltage != storage.config.short_circuit_detection_voltage ||
+					 conf_ptr->short_circuit_detection_time != storage.config.short_circuit_detection_time)
+				{
+					DVC1124_config_changed = true;
+				}
 				storage.config = *conf_ptr;
 				Flash_Write_Storage();
+				if(baud_changed)
+				{
+					CAN_Config();
+				}
+				if(DVC1124_config_changed)
+				{
+					DVC1124_Init();
+				}
 
 				buffer[ind++] = packet_id;
 				if (reply_to != 0)

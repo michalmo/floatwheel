@@ -1,3 +1,6 @@
+#include "conf_general.h"
+#include "datatypes.h"
+#include "n32l40x_can.h"
 #include "can.h"
 
 /*
@@ -60,10 +63,74 @@ void CAN_Config(void)
     CAN_InitStructure.RFLM              = DISABLE;
     CAN_InitStructure.TXFP              = ENABLE;
     CAN_InitStructure.OperatingMode     = CAN_Normal_Mode;
-    CAN_InitStructure.RSJW              = CAN_RSJW_1tq;
-    CAN_InitStructure.TBS1              = CAN_TBS1_10tq;
-    CAN_InitStructure.TBS2              = CAN_TBS2_5tq;
-    CAN_InitStructure.BaudRatePrescaler = 2;
+    switch(storage.config.can_baud_rate)
+    {
+     case CAN_BAUD_1M:
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_5tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_2tq;
+      CAN_InitStructure.BaudRatePrescaler = 2;
+     break;
+     
+     case CAN_BAUD_500K:
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_10tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_5tq;
+      CAN_InitStructure.BaudRatePrescaler = 2;
+     break;
+     
+     case CAN_BAUD_250K:
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_10tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_5tq;
+      CAN_InitStructure.BaudRatePrescaler = 4;
+     break;
+     
+     case CAN_BAUD_125K:
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_10tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_5tq;
+      CAN_InitStructure.BaudRatePrescaler = 8;
+     break;
+     
+     case CAN_BAUD_10K:
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_10tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_5tq;
+      CAN_InitStructure.BaudRatePrescaler = 100;
+     break;
+     
+     case CAN_BAUD_20K:
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_10tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_5tq;
+      CAN_InitStructure.BaudRatePrescaler = 50;
+     break;
+     
+     case CAN_BAUD_50K:
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_10tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_5tq;
+      CAN_InitStructure.BaudRatePrescaler = 20;
+     break;
+     
+     case CAN_BAUD_75K: // 75.117...
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_1tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_1tq;
+      CAN_InitStructure.BaudRatePrescaler = 71;
+     break;
+     
+     case CAN_BAUD_100K:
+      CAN_InitStructure.RSJW = CAN_RSJW_2tq;
+      CAN_InitStructure.TBS1 = CAN_TBS1_10tq;
+      CAN_InitStructure.TBS2 = CAN_TBS2_5tq;
+      CAN_InitStructure.BaudRatePrescaler = 10;
+     break;
+     
+     default:
+     break;
+    }
     
     /*Initializes the CAN */
     CAN_Init(CAN, &CAN_InitStructure);
