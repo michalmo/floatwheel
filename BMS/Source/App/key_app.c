@@ -1,4 +1,6 @@
 #include "key_app.h"
+#include "confparser.h"
+#include "flash.h"
 
 /**************************************************
  * @brie  :KEY_Init()
@@ -46,6 +48,14 @@ void KEY_Task(void)
 		
 		case 4:		//三按
 			
+		break;
+		
+		// 10 presses - reload default config
+		case 255:
+			confparser_set_defaults_main_config_t(&storage.config);
+			Flash_Write_Storage();
+			Flag.Software_Reset = 1;
+			Flag.Power = 3;
 		break;
 		
 	}

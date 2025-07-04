@@ -99,6 +99,10 @@ void KEY1_Scan(void)
 					if(key1_cnt == 2) //消抖
 					{
 						key1_cnt = 0;
+						if(key1_num >= 3)
+						{
+							key1_cnt_2 = 0;
+						}
 						key1_st = 1;
 					}
 				}
@@ -142,7 +146,10 @@ void KEY1_Scan(void)
 				//四击 五击 ...自行添加
 				
 				default: //key3_num的值 可能不是1 2 3 最好加这一句 预防bug
-					
+					if(key1_num >= 10)
+					{
+						KEY1_State = 255;
+					}
 				break;
 			}
 			
