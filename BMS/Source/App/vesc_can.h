@@ -149,6 +149,8 @@ typedef struct
 
 extern VESC_CAN_TYPE VESC_CAN_DATA;
 
+extern int can_tx_queue_size;
+
 void VESC_CAN_Transmit_Task(void);
 
 void VESC_Set_BMS_V_TOT(VESC_CAN_TYPE *vesc_can_data);
