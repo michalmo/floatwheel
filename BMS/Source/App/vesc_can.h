@@ -242,5 +242,6 @@ extern uint8_t rx_buffer[RX_BUFFER_SIZE];
 void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct);
 void VESC_CAN_Receive_Task(void);
 void VESC_Process_Command(uint8_t *pdata, uint16_t len, uint8_t reply_to);
+void VESC_Process_Terminal_Command(char *str,uint8_t can_id);
 
 #endif

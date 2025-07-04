@@ -417,6 +417,30 @@ void VESC_Send_Pong(uint8_t can_id)
 	VESC_COMM_CAN_Transmit(can_id,CAN_PACKET_PONG,can_tx_buffer,2);
 }
 
+#define PRINTF_BUFFER_SIZE 600
+
+void VESC_Printf(uint8_t can_id,const char *fmt,...)
+{
+	va_list arg;
+	va_start(arg,fmt);
+	int len;
+	uint8_t buffer[PRINTF_BUFFER_SIZE];
+
+	buffer[0] = COMM_PRINT;
+	len = vsnprintf((char*)(buffer+1),PRINTF_BUFFER_SIZE-1,fmt,arg)+1;
+	va_end(arg);
+
+	if(len>=PRINTF_BUFFER_SIZE)
+	{
+		len = PRINTF_BUFFER_SIZE;
+	}
+
+	if (can_id != 0)
+	{
+		VESC_COMM_CAN_Transmit_Buffer(can_id,buffer,len,1);
+	}
+}
+
 CAN_STATUS STATUS =
 {
 	.Rpm = 0,			//转速
@@ -761,7 +785,46 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			}
 		break;
 
+		case COMM_TERMINAL_CMD:
+			if(len >= sizeof(buffer))
+			{
+				return;
+			}
+		  pdata[len] = '\0';
+		  VESC_Process_Terminal_Command((char*)pdata,reply_to);
+		break;
+
 		default:
 		break;
+	}
+}
+
+void VESC_Process_Terminal_Command(char *str,uint8_t can_id)
+{
+	VESC_Printf(can_id,"-> %s\n",str);
+
+	if (strcmp(str, "ping") == 0)
+	{
+		VESC_Printf(can_id,"pong\n");
+	}
+	else if (strcmp(str, "help") == 0)
+	{
+		VESC_Printf(
+			can_id,
+			"Valid commands are:\n"
+			"help\n"
+			"  Show this help\n"
+			"ping\n"
+			"  Print pong here to see if the reply works\n"
+		);
+	}
+	else
+	{
+		VESC_Printf(
+			can_id,
+			"Invalid command: %s\n"
+			"type help to list all available commands\n",
+			str
+		);
 	}
 }
