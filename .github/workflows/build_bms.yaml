@@ -54,7 +54,12 @@ jobs:
           echo "version=${GITHUB_REF#refs/tags/bms@}" >> "$GITHUB_OUTPUT"
           echo "version-suffix=$(echo ${GITHUB_REF#refs/tags/bms@} | tr -d '.')" >> "$GITHUB_OUTPUT"
           [[ "${GITHUB_REF#refs/tags/bms@}" =~ ^[0-9\.]+$ ]] && echo "is-prerelease=false" >> "$GITHUB_OUTPUT" || echo "is-prerelease=true" >> "$GITHUB_OUTPUT"
-          echo "CFLAGS=-DVERSION=\\\"$(echo ${GITHUB_REF#refs/tags/bms@} | tr '.' '_')\\\"" >> "$GITHUB_ENV"
+          echo "CFLAGS=-DVERSION=\\\"$(echo ${GITHUB_REF#refs/tags/bms@} | tr '.' '_')\\\" -DGIT_COMMIT_SHA=\\\"$GITHUB_SHA\\\"" >> "$GITHUB_ENV"
+
+      - name: Extract version info from environment
+        if: ${{ ! startsWith(github.ref, 'refs/tags/bms@') }}
+        run: |
+          echo "CFLAGS=-DGIT_REF_NAME=\\\"$GITHUB_REF_NAME\\\" -DGIT_COMMIT_SHA=\\\"$GITHUB_SHA\\\"" >> "$GITHUB_ENV"
 
       - name: Build
         working-directory: ./BMS

@@ -794,6 +794,24 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			}
 		break;
 
+		case COMM_FW_INFO:
+			buffer[ind++] = COMM_FW_INFO;
+			buffer[ind++] = VESC_FW_VERSION_MAJOR;
+			buffer[ind++] = VESC_FW_VERSION_MINOR;
+			buffer[ind++] = VESC_FW_TEST_VERSION_NUMBER;
+#ifdef GIT_COMMIT_SHA
+			uint8_t sha_len = strlen(GIT_COMMIT_SHA) < 46 ? strlen(GIT_COMMIT_SHA) : 46;
+			strncpy((char*)(buffer+ind),GIT_COMMIT_SHA,sha_len);
+			ind += sha_len;
+#endif
+			buffer[ind++] = '\0';  // null terminate (possibly empty) GIT_COMMIT_SHA
+			buffer[ind++] = '\0';  // empty string in place of USER_GIT_COMMIT_HASH
+			if (reply_to != 0)
+			{
+				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
+			}
+		break;
+
 		case COMM_BMS_GET_VALUES:
 			buffer[ind++] = COMM_BMS_GET_VALUES;
 			buffer_append_float32(buffer, VESC_CAN_DATA.pBMS_V_TOT->Total_Voltage.f, 1000000, &ind);
@@ -1316,6 +1334,18 @@ void VESC_Process_Terminal_Command(char *str,uint8_t can_id)
 			CAN_RX_QUEUE_SIZE,
 			storage.conf_flash_write_cnt
 		);
+	}
+	else if (strcmp(str, "fw_info") == 0)
+	{
+		VESC_Printf(can_id, "Version: %s", VERSION);
+#ifdef GIT_REF_NAME
+		VESC_Printf(can_id, "Git Ref: %s", GIT_REF_NAME);
+#endif
+#ifdef GIT_COMMIT_SHA
+		VESC_Printf(can_id, "Git Hash: %s\n", GIT_COMMIT_SHA);
+#else
+		VESC_Printf(can_id, " ");
+#endif
 	}
 	else if (strcmp(str, "uptime") == 0)
 	{

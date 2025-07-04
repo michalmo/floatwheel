@@ -13,6 +13,10 @@
 #define VESC_FW_VERSION_MINOR 5 // must be 5 or VESC Tool will enter limited mode
 #define VESC_FW_TEST_VERSION_NUMBER 0 // must be 0 or VESC Tool will warn
 
+#ifndef VERSION
+#define VERSION "Development build"
+#endif
+
 #ifdef S50S
 // 50S
 #define CONF_SOC_CURVE_100 4.2
