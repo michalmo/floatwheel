@@ -84,6 +84,10 @@ typedef struct
 	*/
 	uint8_t Software_Reset:1;
 	
+	uint8_t Charge_Allowed:1;
+
+	uint8_t Balance_Allowed:1;
+
 	uint8_t	Res2;
 	
 }Flag_Type;

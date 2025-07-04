@@ -10,9 +10,17 @@
 void VESC_CAN_Status_Task(void)
 {
 	int i;
+	static bool first = true;
 
 	if(Flag.Power != 2)
 	{
+		return;
+	}
+
+	if(first)
+	{
+		VESC_Send_Notify_Boot();
+		first = false;
 		return;
 	}
 

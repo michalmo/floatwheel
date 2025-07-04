@@ -4,6 +4,7 @@
 #include "confparser.h"
 #include "confxml.h"
 #include "flash.h"
+#include "mos.h"
 #include "n32l40x_can.h"
 #include "DVC1124_init.h"
 
@@ -214,6 +215,15 @@ void VESC_COMM_CAN_Transmit_Buffer(uint8_t can_id,uint8_t *pdata,unsigned int le
 
 		VESC_COMM_CAN_Transmit(can_id,CAN_PACKET_PROCESS_RX_BUFFER,can_tx_buffer,6);
 	}
+}
+
+void VESC_Send_Notify_Boot(void)
+{
+	VESC_COMM_CAN_Transmit(
+		storage.config.controller_id,
+		CAN_PACKET_NOTIFY_BOOT,
+		(uint8_t *)HW_NAME,
+		(strlen(HW_NAME) < 8) ? strlen(HW_NAME) : 8);
 }
 
 /**************************************************
@@ -863,6 +873,67 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			{
 				VESC_COMM_CAN_Transmit_Buffer(reply_to,buffer,ind,1);
 			}
+		break;
+
+		case COMM_FORWARD_CAN:
+			VESC_COMM_CAN_Transmit_Buffer(pdata[0],pdata+1,len-1,0);
+		break;
+
+		case COMM_BMS_SET_CHARGE_ALLOWED:
+			if(pdata[0])
+			{
+				Flag.Charge_Allowed = 1;
+				VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_Allowed = 1;
+				if(Flag.Overvoltage == 0 &&
+					 Flag.Charging_Overcurrent == 0 &&
+					 Flag.Overtemperature == 0 &&
+					 Flag.Lowtemperature == 0)
+				{
+					Flag.Charger_ON = 0;
+				}
+			}
+			else
+			{
+				CHARG_OFF;
+				Flag.Charge_Allowed = 0;
+				VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charge_Allowed = 0;
+			}
+		break;
+
+		case COMM_BMS_SET_BALANCE_OVERRIDE:
+		{
+			if (pdata[0] >= 0 && pdata[0] < AFE_MAX_CELL_CNT)
+			{
+				balance_override[pdata[0]] = pdata[1];
+			}
+		}
+		break;
+
+		case COMM_BMS_RESET_COUNTERS:
+			// counters are not supported
+			if(pdata[0])
+			{
+				// reset AH counter
+			}
+			if(pdata[1])
+			{
+				// reset WH counter
+			}
+		break;
+
+		case COMM_BMS_FORCE_BALANCE:
+			if(pdata[0])
+			{
+				Flag.Balance_Allowed = 1;
+			}
+			else
+			{
+				Flag.Balance_Allowed = 0;
+			}
+		break;
+
+		case COMM_BMS_ZERO_CURRENT_OFFSET:
+			// current offset is not supported
 		break;
 
 		case COMM_REBOOT:

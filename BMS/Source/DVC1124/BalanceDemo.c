@@ -16,6 +16,13 @@ int	uiCellvotage[AFE_MAX_CELL_CNT];
 u32	uiBalMaskFlags=0,uiBalMaskFlags_Prepared=0;
 u32 newBals = 0;
 u32 newBals_max = 0;
+/*
+	Override balancing decision per cell
+	0: Do not override balancing
+	1: Override and disable balancing on cell
+	2: Override and enable balancing on cell
+ */
+uint8_t balance_override[AFE_MAX_CELL_CNT];
 
 /**
 	* @说明	芯片过温保护
@@ -79,6 +86,7 @@ void BalanceProcess(void)
 {
 	static u32 shouldBals = 0;
 	u8 i;
+	uint16_t charge_start = storage.config.vc_charge_start * 1000;  // mV
 	uint16_t balance_min = storage.config.vc_balance_min * 1000;  // mV
 	uint16_t balance_start = storage.config.vc_balance_start * 1000;  // mV
 	uint16_t balance_end = storage.config.vc_balance_end * 1000;  // mV
@@ -118,10 +126,33 @@ void BalanceProcess(void)
 		// ... respect the balance mode setting
 		storage.config.balance_mode == BALANCE_MODE_DISABLED ||
 		(storage.config.balance_mode == BALANCE_MODE_CHARGING_ONLY && !VESC_CAN_DATA.pBMS_SOC_SOH_TEMP_STAT->Stat.bits.Is_Charging) ||
+		// ... respect the temporary balance override
+		Flag.Balance_Allowed == 0 ||
 		// ... respect the current limit setting
 		fabsf(DVC_1124.Current_CC2) > storage.config.balance_max_current)
 	{
 		newBals = 0;
+	}
+	for(i=0;i<storage.config.cell_num;i++)
+	{
+		// ... respect per cell overrides
+		switch(balance_override[i])
+		{
+			case 1:
+				newBals &= ~(1<<i);
+			break;
+
+			case 2:
+				// safety net to prevent discharging down to zero
+				if(DVC_1124.Single_Voltage[i] > charge_start)
+				{
+					newBals |= (1<<i);
+				}
+			break;
+
+			default:
+			break;
+		}
 	}
 	if(newBals != uiBalMaskFlags)
 	{

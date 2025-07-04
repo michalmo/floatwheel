@@ -177,6 +177,7 @@ extern int can_tx_queue_size;
 
 void VESC_CAN_Transmit_Task(void);
 
+void VESC_Send_Notify_Boot(void);
 void VESC_Set_BMS_V_TOT(VESC_CAN_TYPE *vesc_can_data);
 void VESC_Set_BMS_I(VESC_CAN_TYPE *vesc_can_data);
 void VESC_Set_BMS_AH_WH(VESC_CAN_TYPE *vesc_can_data);
