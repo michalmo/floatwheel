@@ -1,4 +1,5 @@
 #include "vesc_can.h"
+#include "datatypes.h"
 
 CAN_BMS_V_TOT 	BMS_V_TOT = 
 {
@@ -336,6 +337,14 @@ void VESC_Set_BMS_AH_WH_DIS_TOTAL(VESC_CAN_TYPE *vesc_can_data)
 	VESC_COMM_CAN_Transmit(0xFF,CAN_PACKET_BMS_AH_WH_DIS_TOTAL,can_tx_buffer,ind);
 }
 
+void VESC_Send_Pong(uint8_t can_id)
+{
+	can_tx_buffer[0] = CAN_ID;
+	can_tx_buffer[1] = HW_TYPE_VESC_BMS;
+
+	VESC_COMM_CAN_Transmit(can_id,CAN_PACKET_PONG,can_tx_buffer,2);
+}
+
 CAN_STATUS STATUS =
 {
 	.Rpm = 0,			//转速
@@ -380,12 +389,34 @@ VESC_CAN_RX_TYPE VESC_CAN_RX_DATA =
 
 void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct,VESC_CAN_RX_TYPE *vesc_can_rx_data)
 {
-	uint16_t vesc_can_cmd;
+	uint8_t id = can_rx_struct->ExtId & 0xFF;
+	uint32_t vesc_can_cmd = can_rx_struct->ExtId>>8;
 	uint8_t  *pdata =  can_rx_struct->Data;
 	
 	int ind = 0;
 
-	vesc_can_cmd = can_rx_struct->ExtId>>8;
+	if(id == 255 || id == CAN_ID)
+	{
+		switch(vesc_can_cmd)
+		{
+			case CAN_PACKET_PING:
+				VESC_Send_Pong(pdata[0]);
+			break;
+
+			case CAN_PACKET_SHUTDOWN:
+				if(Flag.Power != 0 &&
+					 Flag.Charger_ON == 0 &&
+					 VESC_CAN_RX_DATA.pSTATUS->Rpm < 100 &&
+					 VESC_CAN_RX_DATA.pSTATUS->Rpm > -100)
+				{
+					Flag.Power = 3;
+				}
+			break;
+
+			default:
+			break;
+		}
+	}
 
 	switch(vesc_can_cmd)
 	{

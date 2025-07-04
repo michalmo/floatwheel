@@ -3,6 +3,11 @@
 
 #include "n32l40x.h"
 #include "datatypes.h"
+#include "CellBalance.h"
+#include "charger.h"
+#include "flag.h"
+
+#define CAN_ID 99
 
 #define CAN_TX_QUEUE_SIZE 200
 
