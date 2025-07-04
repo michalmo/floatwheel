@@ -461,7 +461,7 @@ VESC_CAN_RX_TYPE VESC_CAN_RX_DATA =
 
 uint8_t rx_buffer[RX_BUFFER_SIZE];
 
-void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct,VESC_CAN_RX_TYPE *vesc_can_rx_data)
+void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct)
 {
 	uint8_t id = can_rx_struct->ExtId & 0xFF;
 	uint32_t vesc_can_cmd = can_rx_struct->ExtId>>8;
@@ -571,31 +571,31 @@ void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct,VESC_CAN_RX_TYPE *vesc_can_rx_
 	switch(vesc_can_cmd)
 	{
 		case CAN_PACKET_STATUS:
-			vesc_can_rx_data->pSTATUS->Rpm = buffer_get_int32(pdata, &ind);
-			vesc_can_rx_data->pSTATUS->Total_Current = (float)buffer_get_int16(pdata, &ind) / 10;
-			vesc_can_rx_data->pSTATUS->Duty_Cycle = (float)buffer_get_int16(pdata, &ind) / 1000;
+			VESC_CAN_RX_DATA.pSTATUS->Rpm = buffer_get_int32(pdata, &ind);
+			VESC_CAN_RX_DATA.pSTATUS->Total_Current = (float)buffer_get_int16(pdata, &ind) / 10;
+			VESC_CAN_RX_DATA.pSTATUS->Duty_Cycle = (float)buffer_get_int16(pdata, &ind) / 1000;
 		break;
 		
 		case CAN_PACKET_STATUS_2:
-			vesc_can_rx_data->pSTATUS_2->Amp_Hours = (float)buffer_get_int32(pdata, &ind) / 10000;
-			vesc_can_rx_data->pSTATUS_2->Amp_Hours_Charged	= (float)buffer_get_int32(pdata, &ind) / 10000;
+			VESC_CAN_RX_DATA.pSTATUS_2->Amp_Hours = (float)buffer_get_int32(pdata, &ind) / 10000;
+			VESC_CAN_RX_DATA.pSTATUS_2->Amp_Hours_Charged	= (float)buffer_get_int32(pdata, &ind) / 10000;
 		break;
 		
 		case CAN_PACKET_STATUS_3:
-			vesc_can_rx_data->pSTATUS_3->Watt_Hours = (float)buffer_get_int32(pdata, &ind) / 10000;
-			vesc_can_rx_data->pSTATUS_3->Watt_Hours_Charged = (float)buffer_get_int32(pdata, &ind) / 10000;
+			VESC_CAN_RX_DATA.pSTATUS_3->Watt_Hours = (float)buffer_get_int32(pdata, &ind) / 10000;
+			VESC_CAN_RX_DATA.pSTATUS_3->Watt_Hours_Charged = (float)buffer_get_int32(pdata, &ind) / 10000;
 		break;
 		
 		case CAN_PACKET_STATUS_4:
-			vesc_can_rx_data->pSTATUS_4->MOSFET_Temp = (float)buffer_get_int16(pdata, &ind) / 10;
-			vesc_can_rx_data->pSTATUS_4->Motor_Temp = (float)buffer_get_int16(pdata, &ind) / 10;
-			vesc_can_rx_data->pSTATUS_4->Total_Input_Current = (float)buffer_get_int16(pdata, &ind) / 10;
-			vesc_can_rx_data->pSTATUS_4->PID_Pos = (float)buffer_get_int16(pdata, &ind) / 50;
+			VESC_CAN_RX_DATA.pSTATUS_4->MOSFET_Temp = (float)buffer_get_int16(pdata, &ind) / 10;
+			VESC_CAN_RX_DATA.pSTATUS_4->Motor_Temp = (float)buffer_get_int16(pdata, &ind) / 10;
+			VESC_CAN_RX_DATA.pSTATUS_4->Total_Input_Current = (float)buffer_get_int16(pdata, &ind) / 10;
+			VESC_CAN_RX_DATA.pSTATUS_4->PID_Pos = (float)buffer_get_int16(pdata, &ind) / 50;
 		break;
 		
 		case CAN_PACKET_STATUS_5:
-			vesc_can_rx_data->pSTATUS_5->Tachometer_Value = buffer_get_int32(pdata, &ind);
-			vesc_can_rx_data->pSTATUS_5->Input_Voltage = (float)buffer_get_int16(pdata, &ind) / 10;
+			VESC_CAN_RX_DATA.pSTATUS_5->Tachometer_Value = buffer_get_int32(pdata, &ind);
+			VESC_CAN_RX_DATA.pSTATUS_5->Input_Voltage = (float)buffer_get_int16(pdata, &ind) / 10;
 		break;
 
 		default:

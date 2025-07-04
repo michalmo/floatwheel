@@ -143,7 +143,7 @@ void CAN_RX0_IRQHandler(void)
 	{ 
 		CAN_ClearINTPendingBit(CAN,CAN_INT_FMP0);
 		CAN_ReceiveMessage(CAN,0,&CAN_RX_Config);
-		VESC_CAN_RX_Inte(&CAN_RX_Config,&VESC_CAN_RX_DATA);
+		VESC_CAN_RX_Inte(&CAN_RX_Config);
 	}
     
 }

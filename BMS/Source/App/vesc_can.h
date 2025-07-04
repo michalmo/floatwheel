@@ -236,7 +236,7 @@ typedef struct
 extern VESC_CAN_RX_TYPE VESC_CAN_RX_DATA;
 extern uint8_t rx_buffer[RX_BUFFER_SIZE];
 
-void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct,VESC_CAN_RX_TYPE *vesc_can_rx_data);
+void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct);
 void VESC_Process_Command(uint8_t *pdata, uint16_t len, uint8_t reply_to);
 
 #endif
