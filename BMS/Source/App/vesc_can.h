@@ -4,6 +4,9 @@
 #include "n32l40x.h"
 #include "datatypes.h"
 
+#define MAX_CELL_SERIES 20
+#define MAX_TEMP_SENSORS 9
+
 typedef union
 {
 	float f;
@@ -13,7 +16,18 @@ typedef union
 typedef union
 {
 	uint32_t i;
-	uint32_t res:12;
+	uint32_t b32:1;
+	uint32_t b31:1;
+	uint32_t b30:1;
+	uint32_t b29:1;
+	uint32_t b28:1;
+	uint32_t b27:1;
+	uint32_t b26:1;
+	uint32_t b25:1;
+	uint32_t b24:1;
+	uint32_t b23:1;
+	uint32_t b22:1;
+	uint32_t b21:1;
 	uint32_t b20:1;
 	uint32_t b19:1;
 	uint32_t b18:1;
@@ -51,26 +65,22 @@ typedef struct
 typedef struct
 {
 	FLOAT_INT_TYP 	Ah_Counter;				//电池毫安时
-	FLOAT_INT_TYP 	Wh_Counter;				//电池W时 
+	FLOAT_INT_TYP 	Wh_Counter;				//电池W时
 }CAN_BMS_AH_WH;
 
 typedef struct
 {
-	uint8_t         Group;					//第几组	一帧报文最多设置3组电池电压
-	uint8_t			BMS_String;				//BMS串数
-	uint16_t		BMS_Single_Voltage[20];	//单节电池电压	扩大1000倍发送
+	uint16_t		BMS_Single_Voltage[MAX_CELL_SERIES];	//单节电池电压	扩大1000倍发送
 }CAN_BMS_V_CELL;
 
 typedef struct
 {
-	uint8_t			BMS_String;				//BMS串数
 	INT32_BIT_TYP	BMS_BAT;				//单节电池状态
 }CAN_BMS_BAL;
 
 typedef struct
 {
-	uint8_t         Group;					//第几组	一帧报文最多设置3组电池电压
-	uint16_t		BMS_Single_Temp[10];	//电池温度	扩大100倍发送
+	uint16_t		BMS_Single_Temp[MAX_TEMP_SENSORS];	//电池温度	扩大100倍发送
 }CAN_BMS_TEMPS;
 
 typedef struct
@@ -114,48 +124,16 @@ typedef struct
 	CAN_BMS_SOC_SOH_TEMP_STAT	*pBMS_SOC_SOH_TEMP_STAT;
 	CAN_BMS_AH_WH_CHG_TOTAL		*pBMS_AH_WH_CHG_TOTAL;
 	CAN_BMS_AH_WH_DIS_TOTAL		*pBMS_AH_WH_DIS_TOTAL;
-	CAN_PACKET_ID 	VESC_CAN_CMD;
 }VESC_CAN_TYPE;
-
-typedef struct
-{
-	FLOAT_INT_TYP 	Total_Voltage;			//总电压
-	FLOAT_INT_TYP 	Charge_Input_Voltage;	//充电器电压	
-	FLOAT_INT_TYP 	Input_Current;			//输入电流
-	FLOAT_INT_TYP 	Input_Current_BMS_IC;	//BMS_IC电流
-	FLOAT_INT_TYP 	Ah_Counter;				//电池毫安时
-	FLOAT_INT_TYP 	Wh_Counter;				//电池W时 
-	uint16_t 		Humidity;				//湿度	0-10000(0%-100%);
-	int16_t			Temp_Hum_Sensor;		//温度	-10000-10000(-100°-100°)
-	int16_t			Temp_IC;				//IC温度
-	uint16_t		V_Cell_Min;				//单节电池最低电压 扩大1000倍发送
-	uint16_t		V_Cell_Max;				//单节电池最高电压 扩大1000倍发送
-	uint8_t 		Soc;					//0-255(0%-100%)
-	uint8_t			Soh;					//0-255(0%-100%)
-	uint8_t			T_Cell_Max;				//单节电池最大温度
-	uint8_t			Stat;					//
-	FLOAT_INT_TYP	Ah_Charge_Total;		//安时
-	FLOAT_INT_TYP   Wh_Charge_Total;		//瓦时
-	FLOAT_INT_TYP	Ah_Discharge_Total;		//安时
-	FLOAT_INT_TYP   Wh_Discharge_Total;		//瓦时
-	uint8_t         Group;					//第几组	一帧报文最多设置3组电池电压
-	uint8_t			BMS_String;				//BMS串数
-	uint16_t		BMS_Single_Voltage[20];	//单节电池电压	扩大1000倍发送
-	uint16_t		BMS_Single_Temp[10];	//电池温度	扩大100倍发送
-	uint32_t		BMS_Single_Stat;		//单节电池状态	
-	
-	CAN_PACKET_ID 	VESC_CAN_CMD;
-	
-}VESC_CAN_TYP;
 
 extern VESC_CAN_TYPE VESC_CAN_DATA;
 
 void VESC_Set_BMS_V_TOT(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
 void VESC_Set_BMS_I(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
 void VESC_Set_BMS_AH_WH(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_V_CELL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_V_CELL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data,uint8_t start_cell_id);
 void VESC_Set_BMS_BAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
-void VESC_Set_BMS_TEMPS(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
+void VESC_Set_BMS_TEMPS(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data,uint8_t start_sensor_id);
 void VESC_Set_BMS_HUM(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
 void VESC_Set_BMS_SOC_SOH_TEMP_STAT(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
 void VESC_Set_BMS_AH_WH_CHG_TOTAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data);
@@ -208,6 +186,3 @@ extern VESC_CAN_RX_TYPE VESC_CAN_RX_DATA;
 void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct,VESC_CAN_RX_TYPE *vesc_can_rx_data);
 
 #endif
-
-
-

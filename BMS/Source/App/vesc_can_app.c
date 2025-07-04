@@ -34,44 +34,37 @@ void VESC_CAN_Task(void)
 		break;
 			
 		case 1:	//发送电池电压 1-2-3
-			VESC_CAN_DATA.pBMS_V_CELL->Group = 0;
-			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA, 0);
 			vesc_can_send_step++;
 		break;
 		
 		case 2:	//发送电池电压 4-5-6
-			VESC_CAN_DATA.pBMS_V_CELL->Group = 3;
-			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA, 3);
 			vesc_can_send_step++;
 		break;
 		
 		case 3: //发送电池电压 7-8-9
-			VESC_CAN_DATA.pBMS_V_CELL->Group = 6;
-			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA, 6);
 			vesc_can_send_step++;
 		break;
 		
 		case 4://发送电池电压 10-11-12
-			VESC_CAN_DATA.pBMS_V_CELL->Group = 9;
-			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA, 9);
 			vesc_can_send_step++;
 		break;
 		
 		case 5://发送电池电压 13-14-15
-			VESC_CAN_DATA.pBMS_V_CELL->Group = 12;
-			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA, 12);
 			vesc_can_send_step++;
 		break;
 		
 		case 6://发送电池电压 16-17-18
-			VESC_CAN_DATA.pBMS_V_CELL->Group = 15;
-			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA, 15);
 			vesc_can_send_step++;
 		break;
 		
 		case 7://发送电池电压 19-20
-			VESC_CAN_DATA.pBMS_V_CELL->Group = 18;
-			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_V_CELL(&CAN_TX_Config,&VESC_CAN_DATA, 18);
 			vesc_can_send_step++;
 		break;
 		
@@ -91,8 +84,7 @@ void VESC_CAN_Task(void)
 		break;
 		
 		case 11://发送NTC温度
-			VESC_CAN_DATA.pBMS_TEMPS->Group = 0;
-			VESC_Set_BMS_TEMPS(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_TEMPS(&CAN_TX_Config,&VESC_CAN_DATA,0);
 			vesc_can_send_step++;
 		break;
 		
@@ -102,14 +94,12 @@ void VESC_CAN_Task(void)
 		break;
 		
 		case 13://发送错误代码
-			VESC_CAN_DATA.pBMS_TEMPS->Group = 3;
-			VESC_Set_BMS_TEMPS(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_TEMPS(&CAN_TX_Config,&VESC_CAN_DATA,3);
 			vesc_can_send_step++;
 		break;
 		
 		case 14://发送错误代码
-			VESC_CAN_DATA.pBMS_TEMPS->Group = 6;
-			VESC_Set_BMS_TEMPS(&CAN_TX_Config,&VESC_CAN_DATA);
+			VESC_Set_BMS_TEMPS(&CAN_TX_Config,&VESC_CAN_DATA,6);
 			vesc_can_send_step = 0;
 		break;
 		

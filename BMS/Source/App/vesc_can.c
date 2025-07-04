@@ -1,5 +1,5 @@
 #include "vesc_can.h"
-	
+
 CAN_BMS_V_TOT 	BMS_V_TOT = 
 {
 	.Total_Voltage = 0,				//总电压
@@ -19,52 +19,14 @@ CAN_BMS_AH_WH	BMS_AH_WH =
 	.Wh_Counter = 0,				//电池W时 
 };
 
-CAN_BMS_V_CELL	BMS_V_CELL = 		
-{
-	.Group = 0,						//第几组
-	.BMS_String = 20,				//BMS串数
-	.BMS_Single_Voltage[0] = 0,		//单节电池电压
-	.BMS_Single_Voltage[1] = 0,		//单节电池电压
-	.BMS_Single_Voltage[2] = 0,		//单节电池电压
-	.BMS_Single_Voltage[3] = 0,		//单节电池电压	
-	.BMS_Single_Voltage[4] = 0,		//单节电池电压
-	.BMS_Single_Voltage[5] = 0,		//单节电池电压
-	.BMS_Single_Voltage[6] = 0,		//单节电池电压
-	.BMS_Single_Voltage[7] = 0,		//单节电池电压	
-	.BMS_Single_Voltage[8] = 0,		//单节电池电压
-	.BMS_Single_Voltage[9] = 0,		//单节电池电压
-	.BMS_Single_Voltage[10] = 0,	//单节电池电压
-	.BMS_Single_Voltage[11] = 0,	//单节电池电压	
-	.BMS_Single_Voltage[12] = 0,	//单节电池电压
-	.BMS_Single_Voltage[13] = 0,	//单节电池电压
-	.BMS_Single_Voltage[14] = 0,	//单节电池电压
-	.BMS_Single_Voltage[15] = 0,	//单节电池电压	
-	.BMS_Single_Voltage[16] = 0,	//单节电池电压
-	.BMS_Single_Voltage[17] = 0,	//单节电池电压	
-	.BMS_Single_Voltage[18] = 0,	//单节电池电压
-	.BMS_Single_Voltage[19] = 0,	//单节电池电压
-};
+CAN_BMS_V_CELL	BMS_V_CELL;
 
 CAN_BMS_BAL		BMS_BAL = 
 {
-	.BMS_String = 20,				//BMS串数
 	.BMS_BAT.i = 0,					//单节电池状态
 };
 
-CAN_BMS_TEMPS	BMS_TEMPS =
-{
-	.Group = 0,						//第几组
-	.BMS_Single_Temp[0] = 0,		//单节电池温度
-	.BMS_Single_Temp[1] = 0,		//单节电池温度
-	.BMS_Single_Temp[2] = 0,		//单节电池温度
-	.BMS_Single_Temp[3] = 0,		//单节电池温度
-	.BMS_Single_Temp[4] = 0,		//单节电池温度
-	.BMS_Single_Temp[5] = 0,		//单节电池温度
-	.BMS_Single_Temp[6] = 0,		//单节电池温度
-	.BMS_Single_Temp[7] = 0,		//单节电池温度
-	.BMS_Single_Temp[8] = 0,		//单节电池温度
-	.BMS_Single_Temp[9] = 0,		//单节电池温度
-};
+CAN_BMS_TEMPS	BMS_TEMPS;
 
 CAN_BMS_HUM		BMS_HUM = 
 {
@@ -109,6 +71,27 @@ VESC_CAN_TYPE VESC_CAN_DATA =
 	.pBMS_AH_WH_DIS_TOTAL	= &BMS_AH_WH_DIS_TOTAL,
 };
 
+uint8_t can_tx_buffer[8];
+
+uint8_t VESC_COMM_CAN_Transmit(CanTxMessage *can_tx_struct,uint8_t can_id,CAN_PACKET_ID can_packet_id,uint8_t *buffer,unsigned int len)
+{
+	int i;
+	uint32_t eid = (can_id|(can_packet_id<<8));
+
+	if(len>8) return CAN_TxSTS_NoMailBox;
+
+	can_tx_struct->StdId = 0;
+	can_tx_struct->ExtId = eid;
+	can_tx_struct->IDE = CAN_ID_EXT;
+	can_tx_struct->RTR = CAN_RTRQ_DATA;
+	can_tx_struct->DLC = len;
+	for(i=0;i<len;i++){
+		can_tx_struct->Data[i] = buffer[i];
+	}
+
+	return CAN_TransmitMessage(CAN,can_tx_struct);
+}
+
 /**************************************************
  * @brie  :VESC_Set_BMS_V_TOT()
  * @note  :设置总电压 	充电器电压
@@ -118,29 +101,14 @@ VESC_CAN_TYPE VESC_CAN_DATA =
  **************************************************/
 void VESC_Set_BMS_V_TOT(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
 {
-	uint32_t can_id;
+	int ind = 0;
 	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_V_TOT;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = vesc_can_data->pBMS_V_TOT->Total_Voltage.i[3];
-	can_tx_struct->Data[1] = vesc_can_data->pBMS_V_TOT->Total_Voltage.i[2];
-	can_tx_struct->Data[2] = vesc_can_data->pBMS_V_TOT->Total_Voltage.i[1];
-	can_tx_struct->Data[3] = vesc_can_data->pBMS_V_TOT->Total_Voltage.i[0];
-	can_tx_struct->Data[4] = vesc_can_data->pBMS_V_TOT->Charge_Input_Voltage.i[3];
-	can_tx_struct->Data[5] = vesc_can_data->pBMS_V_TOT->Charge_Input_Voltage.i[2];
-	can_tx_struct->Data[6] = vesc_can_data->pBMS_V_TOT->Charge_Input_Voltage.i[1];
-	can_tx_struct->Data[7] = vesc_can_data->pBMS_V_TOT->Charge_Input_Voltage.i[0];
-	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_V_TOT->Total_Voltage.f, &ind);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_V_TOT->Charge_Input_Voltage.f, &ind);
+
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_V_TOT,can_tx_buffer,ind);
 }
-	
+
 /**************************************************
  * @brie  :VESC_Set_BMS_I()
  * @note  :设置输入电流 	BMS_IC电流
@@ -150,27 +118,12 @@ void VESC_Set_BMS_V_TOT(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data
  **************************************************/
 void VESC_Set_BMS_I(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
 {
-	uint32_t can_id;
+	int ind = 0;
 	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_I;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = vesc_can_data->pBMS_I->Input_Current.i[3];
-	can_tx_struct->Data[1] = vesc_can_data->pBMS_I->Input_Current.i[2];
-	can_tx_struct->Data[2] = vesc_can_data->pBMS_I->Input_Current.i[1];
-	can_tx_struct->Data[3] = vesc_can_data->pBMS_I->Input_Current.i[0];
-	can_tx_struct->Data[4] = vesc_can_data->pBMS_I->Input_Current_BMS_IC.i[3];
-	can_tx_struct->Data[5] = vesc_can_data->pBMS_I->Input_Current_BMS_IC.i[2];
-	can_tx_struct->Data[6] = vesc_can_data->pBMS_I->Input_Current_BMS_IC.i[1];
-	can_tx_struct->Data[7] = vesc_can_data->pBMS_I->Input_Current_BMS_IC.i[0];
-	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_I->Input_Current.f, &ind);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_I->Input_Current_BMS_IC.f, &ind);
+
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_I,can_tx_buffer,ind);
 }
 
 /**************************************************
@@ -182,27 +135,12 @@ void VESC_Set_BMS_I(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
  **************************************************/
 void VESC_Set_BMS_AH_WH(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
 {
-	uint32_t can_id;
+	int ind = 0;
 	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_AH_WH;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = vesc_can_data->pBMS_AH_WH->Ah_Counter.i[3];
-	can_tx_struct->Data[1] = vesc_can_data->pBMS_AH_WH->Ah_Counter.i[2];
-	can_tx_struct->Data[2] = vesc_can_data->pBMS_AH_WH->Ah_Counter.i[1];
-	can_tx_struct->Data[3] = vesc_can_data->pBMS_AH_WH->Ah_Counter.i[0];
-	can_tx_struct->Data[4] = vesc_can_data->pBMS_AH_WH->Wh_Counter.i[3];
-	can_tx_struct->Data[5] = vesc_can_data->pBMS_AH_WH->Wh_Counter.i[2];
-	can_tx_struct->Data[6] = vesc_can_data->pBMS_AH_WH->Wh_Counter.i[1];
-	can_tx_struct->Data[7] = vesc_can_data->pBMS_AH_WH->Wh_Counter.i[0];
-	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_AH_WH->Ah_Counter.f, &ind);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_AH_WH->Wh_Counter.f, &ind);
+
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_AH_WH,can_tx_buffer,ind);
 }
 
 /**************************************************
@@ -212,37 +150,26 @@ void VESC_Set_BMS_AH_WH(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data
  *		   vesc_can_data	VESC_CAN_TYPE
  * @retval:无
  **************************************************/
-void VESC_Set_BMS_V_CELL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
+void VESC_Set_BMS_V_CELL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data,uint8_t start_cell_id)
 {
-	uint32_t can_id;
-	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_V_CELL;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = vesc_can_data->pBMS_V_CELL->Group;
-	can_tx_struct->Data[1] = vesc_can_data->pBMS_V_CELL->BMS_String;
-	can_tx_struct->Data[2] = (vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[vesc_can_data->pBMS_V_CELL->Group])>>8;
-	can_tx_struct->Data[3] =  vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[vesc_can_data->pBMS_V_CELL->Group];
-	can_tx_struct->Data[4] = (vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[vesc_can_data->pBMS_V_CELL->Group+1])>>8;
-	can_tx_struct->Data[5] =  vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[vesc_can_data->pBMS_V_CELL->Group+1];
-	if(vesc_can_data->pBMS_V_CELL->Group < 18)
+	int ind = 0;
+
+	can_tx_buffer[ind++] = start_cell_id;
+	can_tx_buffer[ind++] = MAX_CELL_SERIES;
+	if(start_cell_id < MAX_CELL_SERIES)
 	{
-		can_tx_struct->Data[6] = (vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[vesc_can_data->pBMS_V_CELL->Group+2])>>8;
-		can_tx_struct->Data[7] =  vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[vesc_can_data->pBMS_V_CELL->Group+2];
+		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[start_cell_id], &ind);
 	}
-	else
+	if(start_cell_id+1 < MAX_CELL_SERIES)
 	{
-		can_tx_struct->Data[6] = 0;
-		can_tx_struct->Data[7] = 0;
+		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[start_cell_id+1], &ind);
+	}
+	if(start_cell_id+2 < MAX_CELL_SERIES)
+	{
+		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_V_CELL->BMS_Single_Voltage[start_cell_id+2], &ind);
 	}
 	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_V_CELL,can_tx_buffer,ind);
 }
 
 /**************************************************
@@ -254,27 +181,15 @@ void VESC_Set_BMS_V_CELL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_dat
  **************************************************/
 void VESC_Set_BMS_BAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
 {
-	uint32_t can_id;
-	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_BAL;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = vesc_can_data->pBMS_BAL->BMS_String;
-	can_tx_struct->Data[1] = 0;
-	can_tx_struct->Data[2] = 0;
-	can_tx_struct->Data[3] = 0;
-	can_tx_struct->Data[4] = (vesc_can_data->pBMS_BAL->BMS_BAT.i)>>24;
-	can_tx_struct->Data[5] = (vesc_can_data->pBMS_BAL->BMS_BAT.i)>>16;
-	can_tx_struct->Data[6] = (vesc_can_data->pBMS_BAL->BMS_BAT.i)>>8;
-	can_tx_struct->Data[7] =  vesc_can_data->pBMS_BAL->BMS_BAT.i;
-	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	int ind = 0;
+
+	can_tx_buffer[ind++] = MAX_CELL_SERIES;
+	can_tx_buffer[ind++] = 0;
+	can_tx_buffer[ind++] = 0;
+	can_tx_buffer[ind++] = 0;
+	buffer_append_uint32(can_tx_buffer, vesc_can_data->pBMS_BAL->BMS_BAT.i, &ind);
+
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_BAL,can_tx_buffer,ind);
 }
 
 /**************************************************
@@ -284,39 +199,26 @@ void VESC_Set_BMS_BAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
  *		   vesc_can_data	VESC_CAN_TYPE
  * @retval:无
  **************************************************/
-void VESC_Set_BMS_TEMPS(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
+void VESC_Set_BMS_TEMPS(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data,uint8_t start_sensor_id)
 {
-	uint32_t can_id;
+	int ind = 0;
 	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_TEMPS;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = vesc_can_data->pBMS_TEMPS->Group;
-	can_tx_struct->Data[1] = 24;
-	can_tx_struct->Data[2] = (vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[vesc_can_data->pBMS_TEMPS->Group])>>8;
-	can_tx_struct->Data[3] =  vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[vesc_can_data->pBMS_TEMPS->Group];
-	if(vesc_can_data->pBMS_TEMPS->Group < 9)
+	can_tx_buffer[ind++] = start_sensor_id;
+	can_tx_buffer[ind++] = MAX_TEMP_SENSORS;
+	if(start_sensor_id < MAX_TEMP_SENSORS)
 	{
-		can_tx_struct->Data[4] = (vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[vesc_can_data->pBMS_TEMPS->Group+1])>>8;
-		can_tx_struct->Data[5] =  vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[vesc_can_data->pBMS_TEMPS->Group+1];
-		can_tx_struct->Data[6] = (vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[vesc_can_data->pBMS_TEMPS->Group+2])>>8;
-		can_tx_struct->Data[7] =  vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[vesc_can_data->pBMS_TEMPS->Group+2];
+		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[start_sensor_id], &ind);
 	}
-	else
+	if(start_sensor_id+1 < MAX_TEMP_SENSORS)
 	{
-		can_tx_struct->Data[4] = 0;
-		can_tx_struct->Data[5] = 0;
-		can_tx_struct->Data[6] = 0;
-		can_tx_struct->Data[7] = 0;
+		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[start_sensor_id+1], &ind);
+	}
+	if(start_sensor_id+2 < MAX_TEMP_SENSORS)
+	{
+		buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_TEMPS->BMS_Single_Temp[start_sensor_id+2], &ind);
 	}
 	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_TEMPS,can_tx_buffer,ind);
 }
 
 /**************************************************
@@ -328,27 +230,14 @@ void VESC_Set_BMS_TEMPS(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data
  **************************************************/
 void VESC_Set_BMS_HUM(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
 {
-	uint32_t can_id;
+	int ind = 0;
 	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_HUM;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 6;
-	can_tx_struct->Data[0] = (vesc_can_data->pBMS_HUM->Temp_Hum_Sensor)>>8;
-	can_tx_struct->Data[1] =  vesc_can_data->pBMS_HUM->Temp_Hum_Sensor;
-	can_tx_struct->Data[2] = (vesc_can_data->pBMS_HUM->Humidity)>>8;
-	can_tx_struct->Data[3] =  vesc_can_data->pBMS_HUM->Humidity;
-	can_tx_struct->Data[4] = (vesc_can_data->pBMS_HUM->Temp_IC)>>8;;
-	can_tx_struct->Data[5] =  vesc_can_data->pBMS_HUM->Temp_IC;;
-	can_tx_struct->Data[6] = 0x00;
-	can_tx_struct->Data[7] = 0x00;
-	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_HUM->Temp_Hum_Sensor, &ind);
+	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_HUM->Humidity, &ind);
+	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_HUM->Temp_IC, &ind);
+	buffer_append_int16(can_tx_buffer, 0, &ind);
+
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_HUM,can_tx_buffer,ind);
 }
 
 /**************************************************
@@ -365,27 +254,16 @@ void VESC_Set_BMS_HUM(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
  **************************************************/
 void VESC_Set_BMS_SOC_SOH_TEMP_STAT(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
 {
-	uint32_t can_id;
+	int ind = 0;
 	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_SOC_SOH_TEMP_STAT;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = (vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->V_Cell_Min)>>8;
-	can_tx_struct->Data[1] =  vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->V_Cell_Min;
-	can_tx_struct->Data[2] = (vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->V_Cell_Max)>>8;
-	can_tx_struct->Data[3] =  vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->V_Cell_Max;
-	can_tx_struct->Data[4] =  vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->Soc;
-	can_tx_struct->Data[5] =  vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->Soh;
-	can_tx_struct->Data[6] =  vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max;
-	can_tx_struct->Data[7] =  vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->Stat;
-	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->V_Cell_Min, &ind);
+	buffer_append_int16(can_tx_buffer, vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->V_Cell_Max, &ind);
+	can_tx_buffer[ind++] =  (uint8_t)(vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->Soc * 255);
+	can_tx_buffer[ind++] =  (uint8_t)(vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->Soh * 255);
+	can_tx_buffer[ind++] =  (uint8_t)(roundf(vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->T_Cell_Max));
+	can_tx_buffer[ind++] =  vesc_can_data->pBMS_SOC_SOH_TEMP_STAT->Stat.i;
+
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_SOC_SOH_TEMP_STAT,can_tx_buffer,ind);
 }
 
 /**************************************************
@@ -397,27 +275,12 @@ void VESC_Set_BMS_SOC_SOH_TEMP_STAT(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *v
  **************************************************/
 void VESC_Set_BMS_AH_WH_CHG_TOTAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
 {
-	uint32_t can_id;
+	int ind = 0;
 	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_AH_WH_CHG_TOTAL;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Ah_Charge_Total.i[3];
-	can_tx_struct->Data[1] = vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Ah_Charge_Total.i[2];
-	can_tx_struct->Data[2] = vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Ah_Charge_Total.i[1];
-	can_tx_struct->Data[3] = vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Ah_Charge_Total.i[0];
-	can_tx_struct->Data[4] = vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Wh_Charge_Total.i[3];
-	can_tx_struct->Data[5] = vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Wh_Charge_Total.i[2];
-	can_tx_struct->Data[6] = vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Wh_Charge_Total.i[1];
-	can_tx_struct->Data[7] = vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Wh_Charge_Total.i[0];
-	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Ah_Charge_Total.f, &ind);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_AH_WH_CHG_TOTAL->Wh_Charge_Total.f, &ind);
+
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_AH_WH_CHG_TOTAL,can_tx_buffer,ind);
 }
 
 /**************************************************
@@ -429,30 +292,15 @@ void VESC_Set_BMS_AH_WH_CHG_TOTAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *ves
  **************************************************/
 void VESC_Set_BMS_AH_WH_DIS_TOTAL(CanTxMessage *can_tx_struct,VESC_CAN_TYPE *vesc_can_data)
 {
-	uint32_t can_id;
+	int ind = 0;
 	
-	vesc_can_data->VESC_CAN_CMD = CAN_PACKET_BMS_AH_WH_DIS_TOTAL;
-	
-	can_id = (0x000000FF |(vesc_can_data->VESC_CAN_CMD<<8));
-	
-	can_tx_struct->StdId = 0;
-	can_tx_struct->ExtId = can_id;
-	can_tx_struct->IDE = CAN_ID_EXT;
-	can_tx_struct->RTR = CAN_RTRQ_DATA;
-	can_tx_struct->DLC = 8;
-	can_tx_struct->Data[0] = vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Ah_Discharge_Total.i[3];
-	can_tx_struct->Data[1] = vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Ah_Discharge_Total.i[2];
-	can_tx_struct->Data[2] = vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Ah_Discharge_Total.i[1];
-	can_tx_struct->Data[3] = vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Ah_Discharge_Total.i[0];
-	can_tx_struct->Data[4] = vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Wh_Discharge_Total.i[3];
-	can_tx_struct->Data[5] = vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Wh_Discharge_Total.i[2];
-	can_tx_struct->Data[6] = vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Wh_Discharge_Total.i[1];
-	can_tx_struct->Data[7] = vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Wh_Discharge_Total.i[0];
-	
-	CAN_TransmitMessage(CAN,can_tx_struct);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Ah_Discharge_Total.f, &ind);
+	buffer_append_float32_auto(can_tx_buffer, vesc_can_data->pBMS_AH_WH_DIS_TOTAL->Wh_Discharge_Total.f, &ind);
+
+	VESC_COMM_CAN_Transmit(can_tx_struct,0xFF,CAN_PACKET_BMS_AH_WH_DIS_TOTAL,can_tx_buffer,ind);
 }
 
-CAN_STATUS STATUS = 
+CAN_STATUS STATUS =
 {
 	.Rpm = 0,			//转速
 	.Duty_Cycle = 0,	//占空比
@@ -530,10 +378,10 @@ void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct,VESC_CAN_RX_TYPE *vesc_can_rx_
 			vesc_can_rx_data->pSTATUS_5->Input_Voltage 		= (float)((int16_t)(pdata[5]|(pdata[4]<<8)))/10;
 			vesc_can_rx_data->pSTATUS_5->Tachometer_Value 	= (int32_t)(pdata[3]|(pdata[2]<<8)|(pdata[1]<<16)|(pdata[0]<<24));
 		break;
-		
+
 		default:
-			
+
 		break;
-		
+
 	}
 }
