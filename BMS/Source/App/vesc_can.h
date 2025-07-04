@@ -80,6 +80,17 @@ typedef struct
 
 typedef struct
 {
+	/*
+		0 - BMS temperature GP3
+		1 - Battery temperature GP1
+		2 - Battery temperature GP4
+		3 - High voltage
+		4 - Low voltage
+		5 - Discharge high current
+		6 - Charge high current
+		7 - High temperature
+		8 - Low temperature
+	 */
 	uint16_t		BMS_Single_Temp[MAX_TEMP_SENSORS];	//电池温度	扩大100倍发送
 }CAN_BMS_TEMPS;
 
