@@ -90,12 +90,9 @@ void BMS_Undervoltage_Protection(void)
 	uint8_t i = 0,val1 = 0,val2 = 0,val3 = 0;
 	static uint8_t lock = 0;
 	
-	for(i=0;i<AFE_MAX_CELL_CNT;i++)
+	if(DVC_1124.Single_Voltage_Min < CELL_VOLTAGE_CRITICAL)
 	{
-		if(DVC_1124.Single_Voltage[i] < CELL_VOLTAGE_CRITICAL)
-		{
-			val3++;
-		}
+		val3 = 1;
 	}
 	
 	if(val3 != 0)
@@ -114,12 +111,9 @@ void BMS_Undervoltage_Protection(void)
 		
 	if(lock == 0)
 	{
-		for(i=0;i<AFE_MAX_CELL_CNT;i++)
+		if(DVC_1124.Single_Voltage_Min < CELL_VOLTAGE_WARNING)
 		{
-			if(DVC_1124.Single_Voltage[i] < CELL_VOLTAGE_WARNING)
-			{
-				val1++;
-			}
+			val1 = 1;
 		}
 	}
 	else
@@ -154,12 +148,9 @@ void BMS_Undervoltage_Protection(void)
 			Flag.Power = 3;
 		}
 		
-		for(i=0;i<AFE_MAX_CELL_CNT;i++)
+		if(DVC_1124.Single_Voltage_Min <= CELL_VOLTAGE_MIN)
 		{
-			if(DVC_1124.Single_Voltage[i] <= CELL_VOLTAGE_MIN)
-			{
-				val2++;
-			}
+			val2 = 1;
 		}
 		
 		if(val2 == 0)	//所有电池电压均大于3.0V
