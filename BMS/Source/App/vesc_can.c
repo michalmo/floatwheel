@@ -459,14 +459,63 @@ VESC_CAN_RX_TYPE VESC_CAN_RX_DATA =
 	.pSTATUS_5 = &STATUS_5,
 };
 
-uint8_t rx_buffer[RX_BUFFER_SIZE];
+can_queued_message can_rx_queue[CAN_RX_QUEUE_SIZE];
+int can_rx_queue_head = 0;
+int can_rx_queue_size = 0;
+int can_rx_queue_size_max = 0;
 
 void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct)
 {
+	int i;
 	uint8_t id = can_rx_struct->ExtId & 0xFF;
 	uint32_t vesc_can_cmd = can_rx_struct->ExtId>>8;
-	uint8_t len = can_rx_struct->DLC;
-	uint8_t  *pdata =  can_rx_struct->Data;
+	can_queued_message *message = can_rx_queue + (can_rx_queue_head + can_rx_queue_size) % CAN_RX_QUEUE_SIZE;
+
+	if(id != 255 &&
+		 id != storage.config.controller_id &&
+		 vesc_can_cmd != CAN_PACKET_STATUS &&
+		 vesc_can_cmd != CAN_PACKET_STATUS_2 &&
+		 vesc_can_cmd != CAN_PACKET_STATUS_3 &&
+		 vesc_can_cmd != CAN_PACKET_STATUS_4 &&
+		 vesc_can_cmd != CAN_PACKET_STATUS_5)
+	{
+		return;
+	}
+	if(can_rx_queue_size == CAN_RX_QUEUE_SIZE)
+	{
+		return;
+	}
+
+	message->can_id = can_rx_struct->ExtId & 0xFF;
+	message->can_packet_id = can_rx_struct->ExtId>>8;
+	message->len = can_rx_struct->DLC;
+	memcpy(message->data, can_rx_struct->Data, can_rx_struct->DLC);
+
+	can_rx_queue_size++;
+	if(can_rx_queue_size > can_rx_queue_size_max)
+	{
+		can_rx_queue_size_max = can_rx_queue_size;
+	}
+}
+
+uint8_t rx_buffer[RX_BUFFER_SIZE];
+
+void VESC_CAN_Receive_Task(void)
+{
+	if(
+		 // check if there is a new message to process
+		 can_rx_queue_size == 0 ||
+		 // wait if there's a transmit backlog
+		 can_tx_queue_size > 0)
+	{
+		return;
+	}
+
+	can_queued_message *message = can_rx_queue + can_rx_queue_head;
+	uint8_t id = message->can_id;
+	uint8_t vesc_can_cmd = message->can_packet_id;
+	uint8_t len = message->len;
+	uint8_t *pdata =  message->data;
 	
 	int ind = 0;
 	uint16_t rx_buffer_len;
@@ -603,6 +652,9 @@ void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct)
 		break;
 
 	}
+
+	can_rx_queue_head = (can_rx_queue_head + 1) % CAN_RX_QUEUE_SIZE;
+	can_rx_queue_size--;
 }
 
 void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)

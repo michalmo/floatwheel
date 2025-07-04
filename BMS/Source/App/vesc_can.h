@@ -14,7 +14,8 @@
 #define VESC_FW_TEST_VERSION_NUMBER 0 // must be 0 or VESC Tool will warn
 #define CAN_ID 99
 
-#define CAN_TX_QUEUE_SIZE 200
+#define CAN_TX_QUEUE_SIZE 100
+#define CAN_RX_QUEUE_SIZE 20
 #define RX_BUFFER_SIZE 520
 
 #define MAX_CELL_SERIES 20
@@ -237,6 +238,7 @@ extern VESC_CAN_RX_TYPE VESC_CAN_RX_DATA;
 extern uint8_t rx_buffer[RX_BUFFER_SIZE];
 
 void VESC_CAN_RX_Inte(CanRxMessage *can_rx_struct);
+void VESC_CAN_Receive_Task(void);
 void VESC_Process_Command(uint8_t *pdata, uint16_t len, uint8_t reply_to);
 
 #endif
