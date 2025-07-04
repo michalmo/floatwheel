@@ -11,12 +11,12 @@
 CanTxMessage CAN_TX_Config;
 
 /**************************************************
- * @brie  :VESC_CAN_Task()
+ * @brie  :VESC_CAN_Status_Task()
  * @note  :VESC_CAN任务
  * @param :无
  * @retval:无
  **************************************************/
-void VESC_CAN_Task(void)
+void VESC_CAN_Status_Task(void)
 {
 	static uint8_t vesc_can_send_step = 0;
 		

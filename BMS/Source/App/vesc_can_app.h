@@ -5,8 +5,6 @@
 #include "vesc_can.h"
 #include "flag.h"
 
-void VESC_CAN_Task(void);
+void VESC_CAN_Status_Task(void);
 
 #endif
-
-
