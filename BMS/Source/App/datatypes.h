@@ -981,6 +981,85 @@ typedef struct {
 	uint16_t crc;
 } app_configuration;
 
+typedef enum {
+	BALANCE_MODE_DISABLED = 0,
+	BALANCE_MODE_CHARGING_ONLY,
+	BALANCE_MODE_ALWAYS
+} BMS_BALANCE_MODE;
+
+typedef struct {
+	uint8_t controller_id;
+	CAN_BAUD can_baud_rate;
+	uint32_t can_status_rate_hz;
+	int cell_num;
+	BMS_BALANCE_MODE balance_mode;
+	float vc_charge_min;
+	float vc_charge_start;
+	float vc_charge_end;
+	float vc_discharge_min;
+	float vc_balance_min;
+	float vc_balance_start;
+	float vc_balance_end;
+	float vc_balance_high_threshold;
+	float t_min;
+	float t_low_threshold;
+	float t_charge_min;
+	float t_charge_low_threshold;
+	float t_charge_max;
+	float t_charge_high_threshold;
+	float t_bms_charge_max;
+	float t_bms_charge_high_threshold;
+	float min_charge_current;
+	float max_charge_current;
+	float max_discharge_current;
+	float balance_max_current;
+	float short_circuit_detection_voltage;
+	float overvoltage_delay;
+	float undervoltage_delay;
+	float charge_overcurrent_reset_delay;
+	float discharge_overcurrent_delay;
+	float short_circuit_detection_time;
+	float overtemperature_delay;
+	float vc_soc_curve_100;
+	float vc_soc_curve_90;
+	float vc_soc_curve_80;
+	float vc_soc_curve_70;
+	float vc_soc_curve_60;
+	float vc_soc_curve_50;
+	float vc_soc_curve_40;
+	float vc_soc_curve_30;
+	float vc_soc_curve_20;
+	float vc_soc_curve_10;
+	float vc_soc_curve_0;
+	float cell_voltage_cali_p1;
+	float cell_voltage_cali_p2;
+	float cell_voltage_k;
+	float cell_voltage_sag_comp_0;
+	float cell_voltage_sag_comp_1;
+	float cell_voltage_sag_comp_2;
+	float cell_voltage_sag_comp_3;
+	float cell_voltage_sag_comp_4;
+	float cell_voltage_sag_comp_5;
+	float cell_voltage_sag_comp_6;
+	float cell_voltage_sag_comp_7;
+	float cell_voltage_sag_comp_8;
+	float cell_voltage_sag_comp_9;
+	float cell_voltage_sag_comp_10;
+	float cell_voltage_sag_comp_11;
+	float cell_voltage_sag_comp_12;
+	float cell_voltage_sag_comp_13;
+	float cell_voltage_sag_comp_14;
+	float cell_voltage_sag_comp_15;
+	float cell_voltage_sag_comp_16;
+	float cell_voltage_sag_comp_17;
+	float cell_voltage_sag_comp_18;
+	float cell_voltage_sag_comp_19;
+	float cell_voltage_sag_comp_20;
+	float cell_voltage_sag_comp_21;
+	float cell_voltage_sag_comp_22;
+	float cell_voltage_sag_comp_23;
+} main_config_t;
+
 // Communication commands
 typedef enum {
 	COMM_FW_VERSION = 0,

@@ -4,17 +4,11 @@
 #include <math.h>
 
 #include "n32l40x.h"
-#include "datatypes.h"
+#include "conf_general.h"
 #include "CellBalance.h"
 #include "charger.h"
 #include "crc.h"
 #include "flag.h"
-
-#define HW_NAME "Floatwheel BMS"
-#define VESC_FW_VERSION_MAJOR 6 // must be 6 or VESC Tool will warn
-#define VESC_FW_VERSION_MINOR 0
-#define VESC_FW_TEST_VERSION_NUMBER 0 // must be 0 or VESC Tool will warn
-#define CAN_ID 99
 
 #define CAN_TX_QUEUE_SIZE 100
 #define CAN_RX_QUEUE_SIZE 20

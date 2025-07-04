@@ -13,6 +13,7 @@ project:
         - ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/CMSIS/device
         - ../../Library/Nationstech.N32L40x_Library.1.2.2/firmware/n32l40x_std_periph_driver/inc
         - ../../Source/App
+        - ../../Source/Config
         - ../../Source/Drive
         - ../../Source/DVC1124
         - ../../Source/User
@@ -79,6 +80,11 @@ project:
           misc:
             - ASM:
                 - -masm=auto
+    - group: Config
+      files:
+        - file: ../../Source/Config/confparser.c
+        - file: ../../Source/Config/confxml.c
+        - file: ../../Source/Config/conf_general.c
     - group: App
       files:
         - file: ../../Source/App/led_app.c

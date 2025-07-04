@@ -341,7 +341,7 @@
               <MiscControls></MiscControls>
               <Define>N32L40X USE_STDPERIPH_DRIVER ADV2 S50S</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\core;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\device;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\n32l40x_std_periph_driver\inc;..\..\Source\App;..\..\Source\Drive;..\..\Source\DVC1124;..\..\Source\User;..\..\Source\VESC</IncludePath>
+              <IncludePath>..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\core;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\device;..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\n32l40x_std_periph_driver\inc;..\..\Source\App;..\..\Source\Config;..\..\Source\Drive;..\..\Source\DVC1124;..\..\Source\User;..\..\Source\VESC</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -409,6 +409,26 @@
               <FileName>startup_n32l40x.s</FileName>
               <FileType>2</FileType>
               <FilePath>..\..\Library\Nationstech.N32L40x_Library.1.2.2\firmware\CMSIS\device\startup\startup_n32l40x.s</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Config</GroupName>
+          <Files>
+            <File>
+              <FileName>confparser.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Source\Config\confparser.c</FilePath>
+            </File>
+            <File>
+              <FileName>confxml.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Source\Config\confxml.c</FilePath>
+            </File>
+            <File>
+              <FileName>conf_general.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Source\Config\conf_general.c</FilePath>
             </File>
           </Files>
         </Group>
