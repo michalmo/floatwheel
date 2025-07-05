@@ -7,7 +7,8 @@
 // the config struct in a way that is not backwards compatible.
 #define VAR_INIT_CODE 93462984
 
-#define HW_NAME "Floatwheel BMS"
+#define HW_NAME "Floatwheel BMS" // visible device name
+#define HW_IDENTIFIER "FW_BMS_N32L403x_DVC1124" // identifier to validate firmware
 #define VESC_FW_VERSION_MAJOR 6 // must be 6 or VESC Tool will warn
 #define VESC_FW_VERSION_MINOR 5 // must be 5 or VESC Tool will enter limited mode
 #define VESC_FW_TEST_VERSION_NUMBER 0 // must be 0 or VESC Tool will warn

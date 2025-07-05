@@ -4,7 +4,9 @@
 #include "flash.h"
 
 // place storage in retained SRAM2 region
-storage_data storage __attribute__((__AT("0x20006000")));
+storage_data storage __attribute__((__AT__ZERO_INIT(0x20006000)));
+
+const char hw_identifier[] __attribute__((__AT(HW_IDENTIFIER_ADDRESS))) = HW_IDENTIFIER;
 
 void Config_Init()
 {

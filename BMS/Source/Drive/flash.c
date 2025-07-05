@@ -6,7 +6,7 @@
 #include <string.h>
 
 // place storage in retained SRAM2 region
-uint32_t bootloader_trigger __attribute__((__AT("0x20007FFC")));
+uint32_t bootloader_trigger __attribute__((__AT__ZERO_INIT(0x20007FFC)));
 
 void Flash_Init(void)
 {
@@ -71,6 +71,31 @@ void Flash_Load_Storage(void)
 	memcpy((void*)&storage, (uint8_t*)FLASH_STORAGE_START_ADDRESS, sizeof(storage_data));
 }
 
+bool Flash_Verify_New_Firmware_Image_Hardware_Identifier(uint32_t offset, uint8_t *data, uint32_t len)
+{
+	return offset == 0 && strcmp((char *)(data + HW_IDENTIFIER_OFFSET + 6), (char *)HW_IDENTIFIER_ADDRESS) == 0;
+}
+
+bool Flash_Verify_New_Firmware_Hardware_Identifier(void)
+{
+	return strcmp((char *)(FLASH_NEW_FIRMWARE_START_ADDRESS + HW_IDENTIFIER_OFFSET + 6), (char *)HW_IDENTIFIER_ADDRESS) == 0;
+}
+
+bool Flash_Verify_New_Firmware(void)
+{
+	uint8_t *pdata = (uint8_t*)FLASH_NEW_FIRMWARE_START_ADDRESS;
+	int32_t ind = 0;
+	uint32_t firmware_size = buffer_get_uint32(pdata, &ind);
+	uint16_t firmware_crc = buffer_get_uint16(pdata, &ind);
+	
+	return (
+		firmware_size != 0 &&
+		firmware_size <= FLASH_MAIN_FIRMWARE_END_ADDRESS - FLASH_MAIN_FIRMWARE_START_ADDRESS &&
+		Flash_Verify_New_Firmware_Hardware_Identifier() &&
+		crc16(pdata + ind, firmware_size) == firmware_crc
+	);
+}
+
 bool Flash_Erase_New_Firmware(uint32_t size)
 {
 	if (FLASH_NEW_FIRMWARE_END_ADDRESS - FLASH_NEW_FIRMWARE_START_ADDRESS < size)
@@ -87,21 +112,11 @@ bool Flash_Write_New_Firmware(uint32_t offset, uint8_t *data, uint32_t len)
 		// not compatible with VESC BMS bootloader
 		return false;
 	}
+	if(offset == 0 && !Flash_Verify_New_Firmware_Image_Hardware_Identifier(offset, data, len))
+	{
+		return false;
+	}
 	return Flash_Write(FLASH_NEW_FIRMWARE_START_ADDRESS + offset, (uint32_t*)data, len);
-}
-
-bool Flash_Verify_New_Firmware(void)
-{
-	uint8_t *pdata = (uint8_t*)FLASH_NEW_FIRMWARE_START_ADDRESS;
-	int32_t ind = 0;
-	uint32_t firmware_size = buffer_get_uint32(pdata, &ind);
-	uint16_t firmware_crc = buffer_get_uint16(pdata, &ind);
-	
-	return (
-		firmware_size != 0 &&
-		firmware_size <= FLASH_MAIN_FIRMWARE_END_ADDRESS - FLASH_MAIN_FIRMWARE_START_ADDRESS &&
-		crc16(pdata + ind, firmware_size) == firmware_crc
-	);
 }
 
 bool Flash_Verify_Main_Firmware(void)
@@ -136,6 +151,16 @@ bool Flash_Copy_New_Firmware_To_Main_Firmware(void)
 	);
 }
 
+bool Flash_Verify_Bootloader_Image_Hardware_Identifier(uint32_t offset, uint8_t *data, uint32_t len)
+{
+	return offset == 0 && strcmp((char *)(data + HW_IDENTIFIER_OFFSET), (char *)HW_IDENTIFIER_ADDRESS) == 0;
+}
+
+bool Flash_Verify_Bootloader_Hardware_Identifier(void)
+{
+	return strcmp((char *)(FLASH_BOOTLOADER_START_ADDRESS + HW_IDENTIFIER_OFFSET), (char *)HW_IDENTIFIER_ADDRESS) == 0;
+}
+
 bool Flash_Erase_Bootloader(void)
 {
 	return Flash_Erase(FLASH_BOOTLOADER_START_ADDRESS, FLASH_BOOTLOADER_END_ADDRESS);
@@ -148,11 +173,19 @@ bool Flash_Write_Bootloader(uint32_t offset, uint8_t *data, uint32_t len)
 		// this should never happen
 		return false;
 	}
+	if(offset == 0 && !Flash_Verify_Bootloader_Image_Hardware_Identifier(offset, data, len))
+	{
+		return false;
+	}
 	return Flash_Write(FLASH_BOOTLOADER_START_ADDRESS + offset, (uint32_t*)data, len);
 }
 
 void Flash_Enter_Bootloader(void)
 {
+	if(!Flash_Verify_Bootloader_Hardware_Identifier())
+	{
+		return;
+	}
 	bootloader_trigger = BOOTLOADER_INIT_MAGIC_WORD;
 	Flag.Power = 3;
 }

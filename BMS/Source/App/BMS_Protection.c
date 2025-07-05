@@ -10,7 +10,7 @@
 #include "DVC1124_app.h"
 #include "ppm.h"
 
-logged_faults_data logged_faults __attribute__((__AT("0x20006400")));;
+logged_faults_data logged_faults __attribute__((__AT__ZERO_INIT(0x20006400)));;
 
 void BMS_Logged_Faults_Init(void)
 {

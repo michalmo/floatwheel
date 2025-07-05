@@ -964,7 +964,11 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			flash_bootloader = flash_firmware_size <= FLASH_BOOTLOADER_END_ADDRESS - FLASH_BOOTLOADER_START_ADDRESS;
 			if(flash_bootloader)
 			{
-				flash_res = Flash_Erase_Bootloader();
+				// to protect the bootloader from being erased accidentally, erase
+				// will actually happen right before writing the first chunk of the new
+				// bootloader after we've verified that it includes the correct hardware
+				// identifier
+				flash_res = true;
 			}
 			else
 			{
@@ -1014,6 +1018,7 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 			}
 			if(flash_bootloader)
 			{
+				flash_res = true;
 				// VESC Tool prepends firmware with 4 bytes firmware size and 2 bytes
 				// crc, this needs to be skipped when flashing the bootloader, while
 				// taking care write whole words to flash.
@@ -1021,6 +1026,13 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 				{
 					ind += 6;
 					len -= 2;
+					// to protect the bootloader from being erased accidentally, check the
+					// first chunk for the correct hardware identifier, and then erase
+					// before performing the first write
+					flash_res = (
+						Flash_Verify_Bootloader_Image_Hardware_Identifier(new_firmware_offset,pdata+ind, len-ind) &&
+						Flash_Erase_Bootloader()
+					);
 				}
 				else
 				{
@@ -1043,7 +1055,7 @@ void VESC_Process_Command(uint8_t *pdata,uint16_t len,uint8_t reply_to)
 						}
 					}
 				}
-				flash_res = Flash_Write_Bootloader(new_firmware_offset,pdata+ind, len-ind);
+				flash_res = flash_res && Flash_Write_Bootloader(new_firmware_offset,pdata+ind, len-ind);
 				flash_prev_trailing_bytes = *(uint16_t*)(pdata+len);
 			}
 			else

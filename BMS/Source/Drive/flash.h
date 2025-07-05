@@ -14,6 +14,12 @@
 #define FLASH_BOOTLOADER_START_ADDRESS    0x0801E000
 #define FLASH_BOOTLOADER_END_ADDRESS      0x08020000
 #define VESC_TOOL_BOOTLOADER_OFFSET       0x0001E000
+#define HW_IDENTIFIER_OFFSET              0x00000160
+#ifdef BOOTLOADER
+#define HW_IDENTIFIER_ADDRESS             0x0801E160
+#else
+#define HW_IDENTIFIER_ADDRESS             0x08000160
+#endif
 #define BOOTLOADER_INIT_MAGIC_WORD        0xB00720AD
 #define BOOTLOADER_DONE_MAGIC_WORD        0xB007600D
 
@@ -25,11 +31,15 @@ bool Flash_Write(uint32_t start, uint32_t *data, uint32_t len);
 bool Flash_Erase_Storage(void);
 bool Flash_Write_Storage(void);
 void Flash_Load_Storage(void);
+bool Flash_Verify_New_Firmware_Image_Hardware_Identifier(uint32_t offset, uint8_t *data, uint32_t len);
+bool Flash_Verify_New_Firmware_Hardware_Identifier(void);
+bool Flash_Verify_New_Firmware(void);
 bool Flash_Erase_New_Firmware(uint32_t size);
 bool Flash_Write_New_Firmware(uint32_t offset, uint8_t *data, uint32_t len);
-bool Flash_Verify_New_Firmware(void);
 bool Flash_Verify_Main_Firmware(void);
 bool Flash_Copy_New_Firmware_To_Main_Firmware(void);
+bool Flash_Verify_Bootloader_Image_Hardware_Identifier(uint32_t offset, uint8_t *data, uint32_t len);
+bool Flash_Verify_Bootloader_Hardware_Identifier(void);
 bool Flash_Erase_Bootloader(void);
 bool Flash_Write_Bootloader(uint32_t offset, uint8_t *data, uint32_t len);
 void Flash_Enter_Bootloader(void);
