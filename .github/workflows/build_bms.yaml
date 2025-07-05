@@ -10,6 +10,8 @@ on:
   push:
     branches:
       - main
+      - bms-vesc-build-1
+      - bms-vesc-build-2
     tags:
       - bms@*
     paths:
