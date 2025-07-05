@@ -3,6 +3,7 @@ project:
     base-name: bms_$OutputName$
     type:
       - bin
+      - hex
   packs:
     - pack: NSING::N32L40x_DFP@1.0.1
   setups:

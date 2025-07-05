@@ -8,3 +8,4 @@ cp Project/MDK5/out/BMS_VESC_Code_N32L4/ADV2/Release/*.hex ./
 cbuild setup Project/Bootloader/BMS_Bootloader_N32L4.csolution.yml --context-set --context BMS_Bootloader_N32L4.Release+bootloader --packs
 cbuild Project/Bootloader/BMS_Bootloader_N32L4.csolution.yml --context-set --context BMS_Bootloader_N32L4.Release+bootloader
 cp Project/Bootloader/out/BMS_Bootloader_N32L4/bootloader/Release/*.bin ./
+cp Project/Bootloader/out/BMS_Bootloader_N32L4/bootloader/Release/*.hex ./
