@@ -1260,7 +1260,7 @@ void VESC_Process_Terminal_Command(char *str,uint8_t can_id)
 		else
 		{
 			VESC_Printf(can_id,"The following faults were registered since start:\n");
-			for(i = 0;i < logged_faults.index;i++) {
+			for(i = logged_faults.index - 1;i >= 0;i--) {
 				VESC_Printf(
 					can_id,
 					"Fault            : %s\n"
