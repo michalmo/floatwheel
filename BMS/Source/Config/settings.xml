@@ -300,8 +300,8 @@ p, li { white-space: pre-wrap; }
             <suffix> V</suffix>
             <vTx>9</vTx>
         </vc_balance_end>
-        <vc_balance_high_threshold>
-            <longName>Balance High Threshold Voltage</longName>
+        <vc_balance_high_threshold_delta>
+            <longName>Balance High Threshold Voltage (Delta)</longName>
             <type>1</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -309,7 +309,7 @@ p, li { white-space: pre-wrap; }
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Only drain cells that are this close to the maximum cell voltage.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
-            <cDefine>CONF_BALANCE_HIGH_THRESHOLD</cDefine>
+            <cDefine>CONF_BALANCE_HIGH_THRESHOLD_DELTA</cDefine>
             <editorDecimalsDouble>3</editorDecimalsDouble>
             <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
@@ -321,7 +321,7 @@ p, li { white-space: pre-wrap; }
             <vTxDoubleScale>1</vTxDoubleScale>
             <suffix> V</suffix>
             <vTx>9</vTx>
-        </vc_balance_high_threshold>
+        </vc_balance_high_threshold_delta>
         <t_min>
             <longName>Minimum Temperature (Battery)</longName>
             <type>1</type>
@@ -1638,7 +1638,7 @@ p, li { white-space: pre-wrap; }
         <ser>vc_balance_min</ser>
         <ser>vc_balance_start</ser>
         <ser>vc_balance_end</ser>
-        <ser>vc_balance_high_threshold</ser>
+        <ser>vc_balance_high_threshold_delta</ser>
         <ser>t_min</ser>
         <ser>t_low_threshold</ser>
         <ser>t_charge_min</ser>
@@ -1751,7 +1751,7 @@ p, li { white-space: pre-wrap; }
                     <param>vc_balance_min</param>
                     <param>vc_balance_start</param>
                     <param>vc_balance_end</param>
-                    <param>vc_balance_high_threshold</param>
+                    <param>vc_balance_high_threshold_delta</param>
                     <param>balance_max_current</param>
                 </subgroupParams>
             </subgroup>

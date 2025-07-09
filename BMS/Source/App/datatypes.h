@@ -1000,7 +1000,7 @@ typedef struct {
 	float vc_balance_min;
 	float vc_balance_start;
 	float vc_balance_end;
-	float vc_balance_high_threshold;
+	float vc_balance_high_threshold_delta;
 	float t_min;
 	float t_low_threshold;
 	float t_charge_min;

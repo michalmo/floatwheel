@@ -90,7 +90,7 @@ void BalanceProcess(void)
 	uint16_t balance_min = storage.config.vc_balance_min * 1000;  // mV
 	uint16_t balance_start = storage.config.vc_balance_start * 1000;  // mV
 	uint16_t balance_end = storage.config.vc_balance_end * 1000;  // mV
-	uint16_t balance_high_threshold = storage.config.vc_balance_high_threshold * 1000;  // mV
+	uint16_t balance_high_threshold = storage.config.vc_balance_high_threshold_delta * 1000;  // mV
 	uint16_t limit;
 	
 	newBals = 0;

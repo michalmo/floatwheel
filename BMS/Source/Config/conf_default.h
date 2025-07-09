@@ -63,9 +63,9 @@
 #define CONF_BALANCE_END 0.005
 #endif
 
-// Balance High Threshold Voltage
-#ifndef CONF_BALANCE_HIGH_THRESHOLD
-#define CONF_BALANCE_HIGH_THRESHOLD 0.001
+// Balance High Threshold Voltage (Delta)
+#ifndef CONF_BALANCE_HIGH_THRESHOLD_DELTA
+#define CONF_BALANCE_HIGH_THRESHOLD_DELTA 0.001
 #endif
 
 // Minimum Temperature (Battery)

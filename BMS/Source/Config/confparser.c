@@ -22,7 +22,7 @@ int32_t confparser_serialize_main_config_t(uint8_t *buffer, const main_config_t 
 	buffer_append_float32_auto(buffer, conf->vc_balance_min, &ind);
 	buffer_append_float32_auto(buffer, conf->vc_balance_start, &ind);
 	buffer_append_float32_auto(buffer, conf->vc_balance_end, &ind);
-	buffer_append_float32_auto(buffer, conf->vc_balance_high_threshold, &ind);
+	buffer_append_float32_auto(buffer, conf->vc_balance_high_threshold_delta, &ind);
 	buffer_append_float16(buffer, conf->t_min, 10, &ind);
 	buffer_append_float16(buffer, conf->t_low_threshold, 10, &ind);
 	buffer_append_float16(buffer, conf->t_charge_min, 10, &ind);
@@ -104,7 +104,7 @@ bool confparser_deserialize_main_config_t(const uint8_t *buffer, main_config_t *
 	conf->vc_balance_min = buffer_get_float32_auto(buffer, &ind);
 	conf->vc_balance_start = buffer_get_float32_auto(buffer, &ind);
 	conf->vc_balance_end = buffer_get_float32_auto(buffer, &ind);
-	conf->vc_balance_high_threshold = buffer_get_float32_auto(buffer, &ind);
+	conf->vc_balance_high_threshold_delta = buffer_get_float32_auto(buffer, &ind);
 	conf->t_min = buffer_get_float16(buffer, 10, &ind);
 	conf->t_low_threshold = buffer_get_float16(buffer, 10, &ind);
 	conf->t_charge_min = buffer_get_float16(buffer, 10, &ind);
@@ -179,7 +179,7 @@ void confparser_set_defaults_main_config_t(main_config_t *conf) {
 	conf->vc_balance_min = CONF_BALANCE_MIN;
 	conf->vc_balance_start = CONF_BALANCE_START;
 	conf->vc_balance_end = CONF_BALANCE_END;
-	conf->vc_balance_high_threshold = CONF_BALANCE_HIGH_THRESHOLD;
+	conf->vc_balance_high_threshold_delta = CONF_BALANCE_HIGH_THRESHOLD_DELTA;
 	conf->t_min = CONF_T_MIN;
 	conf->t_low_threshold = CONF_T_LOW_THRESHOLD;
 	conf->t_charge_min = CONF_T_CHARGE_MIN;
