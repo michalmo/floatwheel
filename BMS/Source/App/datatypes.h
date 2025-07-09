@@ -996,6 +996,7 @@ typedef struct {
 	float vc_charge_min;
 	float vc_charge_start;
 	float vc_charge_end;
+	float vc_charge_high_threshold;
 	float vc_discharge_min;
 	float vc_balance_min;
 	float vc_balance_start;

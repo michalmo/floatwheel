@@ -58,6 +58,7 @@ void BMS_Overvoltage_Protection(void)
 	uint8_t clean_flag = 0xFF,r0;
 	uint8_t i = 0,val1 = 0;
 	uint16_t charge_end = storage.config.vc_charge_end * 1000;  // mV
+	uint16_t charge_high_threshold = storage.config.vc_charge_high_threshold * 1000;  // mV
 	uint16_t overvoltage_delay = storage.config.overvoltage_delay * 1000;  // ms
 	static uint8_t lock = 0;
 	
@@ -95,8 +96,7 @@ void BMS_Overvoltage_Protection(void)
 			Log_BMS_Fault(BMS_FAULT_CODE_OVERVOLTAGE);
 		}
 		
-		if(newBals == 0 &&	//过压保护解除
-		   DVC_1124.Single_Voltage_Max < charge_end)
+		if(DVC_1124.Single_Voltage_Max < charge_high_threshold)
 		{
 			lock = 0;
 			Flag.Overvoltage = 0;

@@ -43,6 +43,11 @@
 #define CONF_CHARGE_END 4.2
 #endif
 
+// Charge High Threshold Voltage
+#ifndef CONF_CHARGE_HIGH_THRESHOLD
+#define CONF_CHARGE_HIGH_THRESHOLD 4.18
+#endif
+
 // Discharge Minimum Voltage
 #ifndef CONF_DISCHARGE_MIN
 #define CONF_DISCHARGE_MIN 2.7
