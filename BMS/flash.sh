@@ -47,7 +47,7 @@ delimiter="========"
 echo "$delimiter"
 echo "Flashing the new firmware..."
 echo "$delimiter"
-uvx pyocd@0.35.1 load "$firmware_file" -t N32L403KB --pack NSING.N32L40x_DFP.1.0.1.pack
+uvx --python 3.13 pyocd@0.35.1 load "$firmware_file" -t N32L403KB --pack NSING.N32L40x_DFP.1.0.1.pack
 
 echo "$delimiter"
 echo "Please check the flashing messages to make sure the flash was successful."
