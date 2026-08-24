@@ -22,3 +22,8 @@ cp Project/MDK5/out/LCM_Light_Control_IO_WS2812_New/PintV/Release/*.hex ./
 cbuild setup Project/MDK5/LCM_Light_Control_IO_WS2812_New.csolution.yml --context-set --context LCM_Light_Control_IO_WS2812_New.Release+XRV --packs
 cbuild Project/MDK5/LCM_Light_Control_IO_WS2812_New.csolution.yml --context-set --context LCM_Light_Control_IO_WS2812_New.Release+XRV
 cp Project/MDK5/out/LCM_Light_Control_IO_WS2812_New/XRV/Release/*.hex ./
+
+# ATOM
+cbuild setup Project/MDK5/LCM_Light_Control_IO_WS2812_New.csolution.yml --context-set --context LCM_Light_Control_IO_WS2812_New.Release+Atom --packs
+cbuild Project/MDK5/LCM_Light_Control_IO_WS2812_New.csolution.yml --context-set --context LCM_Light_Control_IO_WS2812_New.Release+Atom
+cp Project/MDK5/out/LCM_Light_Control_IO_WS2812_New/Atom/Release/*.hex ./

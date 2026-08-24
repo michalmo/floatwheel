@@ -53,6 +53,15 @@ solution:
         - BATTERY_STRING: 15
         - FIRMWARE_ID_PREFIX: '"XRV"'
       device: HK_MicroChip::HK32F030MF4P6
+    - type: Atom
+      variables:
+        - OutputName: atom
+      define:
+        - ATOM
+        - RS50
+        - BATTERY_STRING: 22
+        - FIRMWARE_ID_PREFIX: '"Atom"'
+      device: HK_MicroChip::HK32F030MF4P6
   build-types:
     - type: Debug
       optimize: debug
